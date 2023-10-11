@@ -108,24 +108,24 @@ function displayDataInTable(data) {
             // Add data to the new row
             newRow.insertCell().appendChild(document.createTextNode(driverId));
             newRow.insertCell().appendChild(document.createTextNode(weekData.summary.city || "N/A"));
+            newRow.insertCell().appendChild(document.createTextNode(formatNumber(weekData.summary.kursy)));
+            newRow.insertCell().appendChild(document.createTextNode(formatNumber(weekData.summary.przychod_dodatkowy)));
+            newRow.insertCell().appendChild(document.createTextNode(formatNumber(weekData.summary.tips)));
             newRow.insertCell().appendChild(document.createTextNode(formatNumber(weekData.summary.commission)));
             newRow.insertCell().appendChild(document.createTextNode(formatNumber(weekData.summary.gotowka)));
-            newRow.insertCell().appendChild(document.createTextNode(formatNumber(weekData.summary.inne)));
-            newRow.insertCell().appendChild(document.createTextNode(formatNumber(weekData.summary.koztyUZ)));
-            newRow.insertCell().appendChild(document.createTextNode(formatNumber(weekData.summary.kursy)));
             newRow.insertCell().appendChild(document.createTextNode(weekData.summary.partner));
-            newRow.insertCell().appendChild(document.createTextNode(formatNumber(weekData.summary.podatek_do_zaplaty)));
-            newRow.insertCell().appendChild(document.createTextNode(formatNumber(weekData.summary.przychod_dodatkowy)));
             newRow.insertCell().appendChild(document.createTextNode(weekData.summary.service.join(", ") || "N/A"));
             newRow.insertCell().appendChild(document.createTextNode(weekData.summary.status || "N/A"));
-            newRow.insertCell().appendChild(document.createTextNode(formatNumber(weekData.summary.tips)));
-            newRow.insertCell().appendChild(document.createTextNode(formatNumber(weekData.summary.total)));
             newRow.insertCell().appendChild(document.createTextNode(formatNumber(weekData.summary.vat_bonus)));
             newRow.insertCell().appendChild(document.createTextNode(formatNumber(weekData.summary.vat_dodatkowy)));
             newRow.insertCell().appendChild(document.createTextNode(formatNumber(weekData.summary.vat_przejazdy)));
             newRow.insertCell().appendChild(document.createTextNode(formatNumber(weekData.summary.wynajem)));
             newRow.insertCell().appendChild(document.createTextNode(formatNumber(weekData.summary.zus)));
-            newRow.insertCell().appendChild(document.createTextNode(formatNumber(weekData.summary.zwrot_kosztow)));
+            newRow.insertCell().appendChild(document.createTextNode(formatNumber(weekData.summary.koztyUZ)));
+            newRow.insertCell().appendChild(document.createTextNode(formatNumber(weekData.summary.inne)));
+            newRow.insertCell().appendChild(document.createTextNode(formatNumber(weekData.summary.bonusPartnera)));
+            newRow.insertCell().appendChild(document.createTextNode(formatNumber(weekData.summary.podatek_do_zaplaty)));
+            newRow.insertCell().appendChild(document.createTextNode(formatNumber(weekData.summary.total)));
                         for (let i = 0; i < newRow.cells.length; i++) {
                 newRow.cells[i].classList.add('data-fade');
             }
@@ -149,24 +149,25 @@ function paginateData(data) {
             const newRow = tableBody.insertRow();
             newRow.insertCell().appendChild(document.createTextNode(driverId));
             newRow.insertCell().appendChild(document.createTextNode(weekData.summary.city || "N/A"));
+            newRow.insertCell().appendChild(document.createTextNode(formatNumber(weekData.summary.kursy)));
+            newRow.insertCell().appendChild(document.createTextNode(formatNumber(weekData.summary.przychod_dodatkowy)));
+            newRow.insertCell().appendChild(document.createTextNode(formatNumber(weekData.summary.tips)));
             newRow.insertCell().appendChild(document.createTextNode(formatNumber(weekData.summary.commission)));
             newRow.insertCell().appendChild(document.createTextNode(formatNumber(weekData.summary.gotowka)));
-            newRow.insertCell().appendChild(document.createTextNode(formatNumber(weekData.summary.inne)));
-            newRow.insertCell().appendChild(document.createTextNode(formatNumber(weekData.summary.koztyUZ)));
-            newRow.insertCell().appendChild(document.createTextNode(formatNumber(weekData.summary.kursy)));
             newRow.insertCell().appendChild(document.createTextNode(weekData.summary.partner));
-            newRow.insertCell().appendChild(document.createTextNode(formatNumber(weekData.summary.podatek_do_zaplaty)));
-            newRow.insertCell().appendChild(document.createTextNode(formatNumber(weekData.summary.przychod_dodatkowy)));
             newRow.insertCell().appendChild(document.createTextNode(weekData.summary.service.join(", ") || "N/A"));
             newRow.insertCell().appendChild(document.createTextNode(weekData.summary.status || "N/A"));
-            newRow.insertCell().appendChild(document.createTextNode(formatNumber(weekData.summary.tips)));
-            newRow.insertCell().appendChild(document.createTextNode(formatNumber(weekData.summary.total)));
             newRow.insertCell().appendChild(document.createTextNode(formatNumber(weekData.summary.vat_bonus)));
             newRow.insertCell().appendChild(document.createTextNode(formatNumber(weekData.summary.vat_dodatkowy)));
             newRow.insertCell().appendChild(document.createTextNode(formatNumber(weekData.summary.vat_przejazdy)));
             newRow.insertCell().appendChild(document.createTextNode(formatNumber(weekData.summary.wynajem)));
             newRow.insertCell().appendChild(document.createTextNode(formatNumber(weekData.summary.zus)));
-            newRow.insertCell().appendChild(document.createTextNode(formatNumber(weekData.summary.zwrot_kosztow)));
+            newRow.insertCell().appendChild(document.createTextNode(formatNumber(weekData.summary.koztyUZ)));
+            newRow.insertCell().appendChild(document.createTextNode(formatNumber(weekData.summary.inne)));
+            newRow.insertCell().appendChild(document.createTextNode(formatNumber(weekData.summary.bonusPartnera)));
+            newRow.insertCell().appendChild(document.createTextNode(formatNumber(weekData.summary.podatek_do_zaplaty)));
+            newRow.insertCell().appendChild(document.createTextNode(formatNumber(weekData.summary.total)));
+
         }
     }
 }
