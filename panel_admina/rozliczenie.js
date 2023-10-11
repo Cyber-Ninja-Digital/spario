@@ -21,9 +21,12 @@ document.addEventListener('DOMContentLoaded', function () {
     });
     document.getElementById('rows-per-page').addEventListener('change', function() {
         rowsPerPage = parseInt(this.value);
-        paginateData(globalData);  // Redraw the table with the new rowsPerPage value
+        paginateData(globalData);  // Перерисовка таблицы с новым значением rowsPerPage
         document.getElementById('total-pages').textContent = Math.ceil(Object.keys(globalData).length / rowsPerPage);
-    });    
+        // Обновление номера текущей страницы
+        currentPage = 1;
+        updateCurrentPage();
+    });
     function filterData() {
         const searchValue = document.getElementById('search').value.toLowerCase();
         const selectedCity = document.getElementById('city-select').value;
