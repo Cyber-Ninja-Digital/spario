@@ -1,0 +1,142 @@
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.0/papaparse.min.js"></script>
+<script src="https://www.gstatic.com/firebasejs/8.6.1/firebase-app.js"></script>
+<script src="https://www.gstatic.com/firebasejs/8.6.1/firebase-firestore.js"></script>
+<script src="https://www.gstatic.com/firebasejs/8.6.1/firebase-auth.js"></script>
+<script src="https://www.gstatic.com/firebasejs/8.6.1/firebase-database.js"></script>
+<script src="https://www.gstatic.com/firebasejs/8.6.1/firebase-storage.js"></script>
+<script>
+    const firebaseConfig = {
+        databaseURL: "https://crmgodelta-default-rtdb.europe-west1.firebasedatabase.app",
+        apiKey: "AIzaSyBHXIuwuPviUaOUlpzHGHgo3Qh5BxvyOQY",
+        authDomain: "crmgodelta.firebaseapp.com",
+        projectId: "crmgodelta",
+        storageBucket: "crmgodelta.appspot.com",
+        messagingSenderId: "895480844926",
+        appId: "1:895480844926:web:bcc1b4f17cf8a5ab4f3e2f",
+        measurementId: "G-DQMX104TNF",
+    };
+
+    firebase.initializeApp(firebaseConfig);
+    console.log(firebaseConfig);
+
+    const auth = firebase.auth();
+    const db = firebase.firestore();
+    const firestoreDb = db;
+    const realtimeDb = firebase.database();
+
+    auth.setPersistence(firebase.auth.Auth.Persistence.LOCAL);
+
+    function loginUser(email, password) {
+        auth.signInWithEmailAndPassword(email, password)
+            .then((userCredential) => {
+                console.log("Пользователь вошел в систему:", userCredential.user);
+                console.log("User UID:", userCredential.user.uid);
+            })
+            .catch((error) => {
+                console.error("Ошибка входа:", error);
+                console.error("Error code:", error.code);
+                console.error("Error message:", error.message);
+            });
+    }
+
+
+    auth.onAuthStateChanged(user => {
+        if (user) {
+            console.log('User signed in:', user);
+        } else {
+            console.log('Пользователь вышел');
+        }
+    });
+
+    window.addEventListener('DOMContentLoaded', (event) => {
+        const loginForm = document.getElementById('login-form');
+        if (loginForm) {
+            loginForm.addEventListener('submit', (e) => {
+                e.preventDefault();
+                const email = document.getElementById('email-input').value;
+                const password = document.getElementById('password-input').value;
+                console.log('Email:', email);
+                console.log('Password:', password);
+                loginUser(email, password);
+            });
+        }
+
+        const logoutButton = document.getElementById("logout-button");
+        if (logoutButton) {
+            logoutButton.onclick = function () {
+                auth.signOut().then(() => {
+                    console.log("User signed out successfully.");
+                }).catch((error) => {
+                    console.error("Error signing out:", error);
+                });
+            };
+        }
+    });
+    function formatNumber(number, digits = 2) {
+        if (typeof number === "number") {
+            return parseFloat(number.toFixed(digits));
+        } else {
+            return number;  // если это не число, просто вернуть исходное значение
+        }
+    }
+</script>
+<form id="expense-form">
+    <label for="driver">Kierowca:</label>
+    <select id="driver"></select>
+    
+    <label for="expense-type">Typ wydatku:</label>
+    <input id="expense-type" type="text">
+    
+    <label for="gross-amount">Kwota wydatków:</label>
+    <input id="gross-amount" type="number">
+    <label for="purchase-date">Data transakcji:</label>
+    <input type="date" id="purchase-date" name="purchase-date" required>
+    
+    <input type="submit" value="Zaakceptuj">
+</form>
+
+</script>
+<script>
+    document.addEventListener("DOMContentLoaded", (e) => {
+        document.getElementById("expense-form").addEventListener("submit", function (e) {
+            e.preventDefault();
+    
+            var driverId = document.getElementById("driver").value;
+            var expenseType = document.getElementById("expense-type").value;
+            var grossAmount = document.getElementById("gross-amount").value;
+            var purchaseDate = document.getElementById("purchase-date").value;
+    
+            if (!driverId || !expenseType || !grossAmount || !purchaseDate) {
+                console.log('Please fill all fields.');
+                return;
+            }
+    
+            let invoces = {
+                type: 'wydatek',
+                expenseType: expenseType,
+                grossAmount: grossAmount,
+                purchaseDate: purchaseDate,
+                status: 'zaakceptowany'
+            };
+    
+            realtimeDb
+                .ref()
+                .child("drivers/" + driverId + "/invoces")
+                .push(invoces);
+    
+            document.getElementById("expense-form").reset();
+            alert('Расход успешно добавлен.');
+        });
+    
+        let driversSelect = document.getElementById('driver');
+        firebase.database().ref('/drivers').once('value').then(function(snapshot) {
+            snapshot.forEach(function(childSnapshot) {
+                let option = document.createElement('option');
+                option.value = childSnapshot.key; 
+                option.text = childSnapshot.key; // Используем ключи в качестве имени водителя
+                driversSelect.appendChild(option);
+            });
+        });
+    });
+    </script>

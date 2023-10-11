@@ -1,0 +1,338 @@
+<!-- Step 4: Review and Sign Documents -->
+<div id="step_4" class="step">
+    <h2>Przeglądaj i podpisuj dokumenty:</h2>
+    <p>Prosimy o zapoznanie się z poniższymi dokumentami i podpisanie ich.</p>
+<div id="documents-list">
+    <div class="document-item" data-contract-id="regulamin" data-generate-function="regulamin">
+        <h3>Regulamin</h3>
+            <p class="generation-message" style="display: none;">Generowanie dokumentu...</p>
+    <div class="progress-container" style="display: none;">
+        <div class="progress-bar"></div>
+    </div>
+        <button onclick="requestDocumentGeneration(this)">Generuj i otwórz</button>
+    </div>
+    <div class="document-item" data-contract-id="zasadyWspolpracy" data-generate-function="zasadyWspolpracy">
+        <h3>Zasady Współpracy</h3>
+            <p class="generation-message" style="display: none;">Generowanie dokumentu...</p>
+    <div class="progress-container" style="display: none;">
+        <div class="progress-bar"></div>
+    </div>
+        <button onclick="requestDocumentGeneration(this)">Generuj i otwórz</button>
+    </div>
+    <div class="document-item" data-contract-id="rodo" data-generate-function="rodo">
+        <h3>Rodo</h3>
+            <p class="generation-message" style="display: none;">Generowanie dokumentu...</p>
+    <div class="progress-container" style="display: none;">
+        <div class="progress-bar"></div>
+    </div>
+        <button onclick="requestDocumentGeneration(this)">Generuj i otwórz</button>
+    </div>
+</div>
+    <button id="next_step_4">Dalej</button>
+    <p id="error_step_4" style="color: red;"></p>
+</div>
+<div id="document-modal" style="display: none; position: fixed; z-index: 1; left: 0; top: 0; width: 100%; height: 100%; overflow: auto; background-color: rgba(0,0,0,0.4);">
+    <div style="background-color: #fefefe; margin: 15% auto; padding: 20px; border: 1px solid #888; width: 70%;">
+        <iframe id="document-frame" width="100%" height="500px"></iframe>
+        <button id="openSignatureModal" onclick="openSignatureModal()">Podpisz</button>
+    </div>
+</div>
+<div id="signature-modal" style="display: none; position: fixed; z-index: 2; left: 0; top: 0; width: 100%; height: 100%; overflow: auto; background-color: rgba(0,0,0,0.4);">
+    <div style="background-color: #fefefe; margin: 15% auto; padding: 20px; border: 1px solid #888; width: 70%;">
+        <canvas id="signature-pad-modal" width="400" height="200" style="border:1px solid #000;"></canvas>
+        <button id="signButtonModal" onclick="saveSignature()" style="display: none;">Zatwierdź podpis</button>
+        <button onclick="closeSignatureModal()">Zamknij</button>
+        <button onclick="clearSignature()">Wyczyścić</button>
+    </div>
+</div>
+<div id="thank_you">
+    <h1>Dziękujemy!</h1>
+    <p>Twoje informacje zostały pomyślnie wysłane. Za chwilę zostaniesz przekierowany na portal.</p>
+</div>
+<div id="progress-container" style="width: 100%; background-color: #ccc; margin-bottom: 20px;">
+    <div id="progress-bar" style="width: 0%; height: 20px; background-color: #4CAF50;"></div>
+</div>
+<style>
+    #document-modal {
+        font-size: 16px;  /* Устанавливаем базовый размер шрифта для удобства чтения на мобильных устройствах */
+    }
+    #document-modal > div {
+        width: 95%;  /* Устанавливаем ширину контейнера 90% от ширины экрана */
+        max-width: 800px;  /* Ограничиваем максимальную ширину для больших экранов */
+        margin: 5% auto;  /* Уменьшаем верхний и нижний отступы */
+        overflow-y: auto;  /* Добавляем прокрутку, если контент не помещается */
+    }
+    /* Стили для области подписи */
+    #signature-pad {
+        width: 100%;  /* Устанавливаем ширину в 100% от ширины контейнера */
+        max-width: 600px;  /* Ограничиваем максимальную ширину */
+        height: 300px;  /* Устанавливаем высоту, чтобы было удобно рисовать подпись на мобильном устройстве */
+        margin: 20px auto;  /* Добавляем отступы сверху и снизу */
+        border: 1px solid #000;
+        background-color: #fff;  /* Устанавливаем фоновый цвет для области подписи */
+    }
+    .progress-container {
+    width: 100%;
+    background-color: #ccc;
+    margin-bottom: 10px;
+}
+.progress-bar {
+    width: 0%;
+    height: 20px;
+    background-color: #4CAF50;
+    transition: width 0.5s;
+}
+</style>
+<script>
+    async function getDriverId() {
+        if (!currentUserId) return null;
+        try {
+            const userDoc = await db.collection("users").doc(currentUserId).get();
+            if (userDoc.exists) {
+                return userDoc.data().driverId;
+            } else {
+                console.error("User document does not exist.");
+                return null;
+            }
+        } catch (error) {
+            console.error("Error fetching user data:", error);
+            return null;
+        }
+    }
+    async function requestDocumentGeneration(buttonElement, openModal = true) {
+        var docItem = buttonElement.parentElement;
+        var generateFunction = docItem.getAttribute('data-generate-function');
+        var progressBar = docItem.querySelector('.progress-bar');
+        var progressContainer = docItem.querySelector('.progress-container');
+        var generationMessage = docItem.querySelector('.generation-message');
+        generationMessage.style.display = "block";
+        progressContainer.style.display = "block";
+        // Имитация прогресса загрузки (это только для демонстрации, так как реальный прогресс может зависеть от многих факторов)
+        let progress = 0;
+        const progressInterval = setInterval(() => {
+            if (progress < 100) {
+                progress += 10; // увеличиваем на 10% каждые 200мс
+                progressBar.style.width = progress + '%';
+            } else {
+                clearInterval(progressInterval);
+            }
+        }, 200);
+        console.log("Generated document type:", generateFunction);
+        var contractId = docItem.getAttribute('data-contract-id');
+        // Получаем driverId
+        const driverId = await getDriverId();
+        if (!driverId) {
+            console.error("Unable to get driverId.");
+            return;
+        }
+        // Здесь отправляем запрос на сервер для генерации документа.
+        fetch(`https://us-central1-ccmcolorpartner.cloudfunctions.net/generateDocument`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                driverName: driverId,
+                documentType: generateFunction
+            })
+        })
+        .then(response => response.json())
+        .then(data => {
+            generationMessage.style.display = "none"; // Скрываем сообщение о генерации
+            progressContainer.style.display = "none"; // Скрываем прогресс-бар
+            clearInterval(progressInterval); // Останавливаем имитацию прогресса
+            if(openModal) {
+                openDocument(data.pdfUrl, contractId);
+            }
+        })
+        .catch(error => {
+            console.error("Error during document generation:", error);
+            document.getElementById('error_step_4').textContent = "Błąd podczas generowania dokumentu.";
+        });
+    }
+    async function checkIfDocumentIsSigned(userId, docType) {
+        try {
+            const docSnapshot = await db.collection("users").doc(userId).collection("dokumenty").doc(docType).get();
+            return docSnapshot.exists && docSnapshot.data().signed;
+        } catch (error) {
+            console.error("Error checking document signature:", error);
+            return false;
+        }
+    }
+    async function updateDocumentButtons() {
+        const documents = ["regulamin", "zasadyWspolpracy", "rodo"];
+        for (const docType of documents) {
+            const isSigned = await checkIfDocumentIsSigned(currentUserId, docType);
+            const button = document.querySelector(`.document-item[data-contract-id="${docType}"] button`);
+            if (isSigned) {
+                button.textContent = "Dokument podpisany";
+                button.disabled = true;
+            } else {
+                button.textContent = "Generuj i otwórz";
+                button.disabled = false;
+            }
+        }
+    }
+    function showGenerationProgress() {
+        document.getElementById('documents-progress').style.display = "block";
+    }
+    function hideGenerationProgress() {
+        document.getElementById('documents-progress').style.display = "none";
+    }
+    function openDocument(pdfUrl, contractId) {
+        var documentFrame = document.getElementById('document-frame');
+        var signButton = document.getElementById('signButton');
+        documentFrame.src = pdfUrl;
+        currentContractId = contractId;
+        signButton.style.display = "block";
+        document.getElementById('document-modal').style.display = "block";
+        // Убрали проверку подписания, так что кнопка теперь всегда будет отображать "Zatwierdź podpis" и быть активной
+        signButton.textContent = "Zatwierdź podpis";
+        signButton.disabled = false;
+    }
+    function isInsideCanvas(e) {
+        let x, y;
+        if (e.touches) {
+            x = e.touches[0].clientX;
+            y = e.touches[0].clientY;
+        } else {
+            x = e.clientX;
+            y = e.clientY;
+        }
+        let rect = canvas.getBoundingClientRect();
+        return x >= rect.left && x <= rect.right && y >= rect.top && y <= rect.bottom;
+    }
+    let canvas = document.getElementById("signature-pad");
+    let ctx = canvas.getContext("2d");
+    let drawing = false;
+    let emptySignatureData;
+    window.onload = function() {
+        // 2. Заполним эту переменную начальным состоянием холста после его инициализации
+        emptySignatureData = canvas.toDataURL();
+    }
+    canvas.addEventListener("mousedown", function() {
+        drawing = true;
+        ctx.beginPath();
+    });
+    canvas.addEventListener("mousemove", function(e) {
+        if (!isInsideCanvas(e)) {
+            drawing = false;
+            return;
+        }
+        draw(e);
+    });
+    canvas.addEventListener("touchstart", function(e) {
+    e.preventDefault();  // Добавлено
+    drawing = true;
+    ctx.beginPath();
+    let rect = canvas.getBoundingClientRect();
+    ctx.moveTo(e.touches[0].clientX - rect.left, e.touches[0].clientY - rect.top);
+});
+canvas.addEventListener("touchmove", function(e) {
+    e.preventDefault();  // Добавлено
+    if (!isInsideCanvas(e)) {
+        drawing = false;
+        return;
+    }
+    if (!drawing) return;
+    ctx.lineWidth = 5;
+    ctx.lineCap = "round";
+    ctx.strokeStyle = "black";
+    let rect = canvas.getBoundingClientRect();
+    ctx.lineTo(e.touches[0].clientX - rect.left, e.touches[0].clientY - rect.top);
+    ctx.stroke();
+});
+canvas.addEventListener("touchend", function(e) {
+    e.preventDefault();  // Добавлено
+    drawing = false;
+});
+    function draw(e) {
+        if (!drawing) return;
+        ctx.lineWidth = 5;
+        ctx.lineCap = "round";
+        ctx.strokeStyle = "black";
+        let rect = canvas.getBoundingClientRect();
+        ctx.lineTo(e.clientX - rect.left, e.clientY - rect.top);
+            ctx.stroke();
+        ctx.beginPath();
+        ctx.moveTo(e.clientX - canvas.offsetLeft, e.clientY - canvas.offsetTop);
+    }
+    async function checkIfDocumentIsSigned(userId, docType) {
+        try {
+            const docSnapshot = await db.collection("users").doc(userId).collection("dokumenty").doc(docType).get();
+            return docSnapshot.exists && docSnapshot.data().signature;
+        } catch (error) {
+            console.error("Error checking document signature:", error);
+            return false;
+        }
+    }
+    async function saveSignature() {
+        let signatureData = canvas.toDataURL();
+        let docType = currentContractId;
+            // 3. Проверка перед сохранением
+        if (signatureData === emptySignatureData) {
+            console.error("No signature detected. Please sign before saving.");
+            return; // Возвращаемся, если подпись не обнаружена
+        }
+        // Convert base64 data to blob
+        let byteCharacters = atob(signatureData.split(',')[1]);
+        let byteArrays = [];
+        for (let offset = 0; offset < byteCharacters.length; offset += 512) {
+            let slice = byteCharacters.slice(offset, offset + 512);
+            let byteNumbers = new Array(slice.length);
+            for (let i = 0; i < slice.length; i++) {
+                byteNumbers[i] = slice.charCodeAt(i);
+            }
+            let byteArray = new Uint8Array(byteNumbers);
+            byteArrays.push(byteArray);
+        }
+        let blob = new Blob(byteArrays, {type: "image/png"});
+        // Upload to Firebase Storage
+        let storageRef = firebase.storage().ref();
+        let signatureRef = storageRef.child(`signatures/${currentUserId}/${docType}.png`);
+        try {
+            await signatureRef.put(blob);
+            let signatureURL = await signatureRef.getDownloadURL();
+            await db.collection("users").doc(currentUserId).collection("dokumenty").doc(docType).set({
+                signature: signatureURL
+            });
+            console.log("Signature saved successfully.");
+            let signButton = document.getElementById('signButton');
+            signButton.textContent = "Dokument podpisany";
+            signButton.disabled = true;
+            clearSignature();
+            // Повторно генерируем документ, но уже с подписью и без открытия модального окна
+            const buttonElement = document.querySelector(`[data-contract-id="${docType}"] button`);
+            requestDocumentGeneration(buttonElement, false);
+            closeDocumentModal();
+        } catch (error) {
+            console.error("Error saving signature:", error);
+        }
+        await updateDocumentButtons();
+    }
+    function clearSignature() {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        drawing = false;
+    }
+    function closeDocumentModal() {
+        document.getElementById('document-modal').style.display = "none";
+    }
+    async function areAllDocumentsSigned() {
+        const documents = ["regulamin", "zasadyWspolpracy", "rodo"];
+        for (const docType of documents) {
+            const isSigned = await checkIfDocumentIsSigned(currentUserId, docType);
+            if (!isSigned) {
+                return false;
+            }
+        }
+        return true;
+    }
+    function disableScrolling(){
+        let x = window.scrollX;
+        let y = window.scrollY;
+        window.onscroll = function(){ window.scrollTo(x, y); };
+    }
+    function enableScrolling(){
+        window.onscroll = function(){};
+    }
+    </script>

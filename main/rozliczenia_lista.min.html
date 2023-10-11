@@ -1,0 +1,471 @@
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script><script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.0/papaparse.min.js"></script><script src="https://www.gstatic.com/firebasejs/8.6.1/firebase-app.js"></script><script src="https://www.gstatic.com/firebasejs/8.6.1/firebase-firestore.js"></script><script src="https://www.gstatic.com/firebasejs/8.6.1/firebase-auth.js"></script><script src="https://www.gstatic.com/firebasejs/8.6.1/firebase-database.js"></script><script src="https://www.gstatic.com/firebasejs/8.6.1/firebase-storage.js"></script><script>const firebaseConfig = {
+    apiKey: "AIzaSyDVz0ho0nQb7Sh9o_0wFLZfVJM7aeGYgb0",
+        authDomain: "ccmcolorpartner.firebaseapp.com",
+        databaseURL: "https://ccmcolorpartner-default-rtdb.europe-west1.firebasedatabase.app",
+        projectId: "ccmcolorpartner",
+        storageBucket: "ccmcolorpartner.appspot.com",
+        messagingSenderId: "417966588632",
+        appId: "1:417966588632:web:bf85b1ff7307bb86de8dad",
+        measurementId: "G-WQP6RE6CQ3"
+  };
+
+  firebase.initializeApp(firebaseConfig);
+
+  const auth = firebase.auth();
+  const db = firebase.firestore();
+  const firestoreDb = db;
+  const realtimeDb = firebase.database();
+
+  auth.setPersistence(firebase.auth.Auth.Persistence.LOCAL);
+
+  function loginUser(email, password) {
+    auth.signInWithEmailAndPassword(email, password)
+      .then((userCredential) => {
+      })
+      .catch((error) => {
+        console.error("Ошибка входа:", error);
+        console.error("Error code:", error.code);
+        console.error("Error message:", error.message);
+      });
+  }
+
+
+  auth.onAuthStateChanged(user => {
+    if (user) {
+    } else {
+    }
+  });
+
+  window.addEventListener('DOMContentLoaded', (event) => {
+    const loginForm = document.getElementById('login-form');
+    if (loginForm) {
+      loginForm.addEventListener('submit', (e) => {
+        e.preventDefault();
+        const email = document.getElementById('email-input').value;
+        const password = document.getElementById('password-input').value;
+        loginUser(email, password);
+      });
+    }
+
+    const logoutButton = document.getElementById("logout-button");
+    if (logoutButton) {
+      logoutButton.onclick = function () {
+        auth.signOut().then(() => {
+        }).catch((error) => {
+          console.error("Error signing out:", error);
+        });
+      };
+    }
+  });
+  function formatNumber(number, digits = 2) {
+    if (typeof number === "number") {
+      return parseFloat(number.toFixed(digits));
+    } else {
+      return number;  // если это не число, просто вернуть исходное значение
+    }
+  }</script><select id="week-selector"><!-- Опции будут добавлены с помощью JavaScript --></select> <input type="text" id="driver-filter" placeholder="Enter driver name"> <button id="export-button" type="button">Eksportuj do CSV</button> <select id="city-selector"><!-- Опции будут добавлены с помощью JavaScript --></select><table id="drivers-data"><thead><tr><th>Kierowca</th><th>Tydzień</th><th>Miasto</th><th>Aplikację</th><th>Kursy</th><th>Przychod Dodatkowy</th><th>Prowizja</th><th>Gotowka</th><th>VAT Przejazdy</th><th>Zwrot VAT</th><th>Partner</th><th>ZUS</th><th>Inne</th><th>Wynajem</th><th>Zwrot kosztów</th><th>Podatek do zapłaty</th><th>Na konto</th><th>Operację</th><th>Saldo</th><button id="save-button" type="button">Zapisz</button></tr></thead><tbody id="drivers-data-body"><!-- Сюда будут добавляться строки с данными водителей --></tbody></table><script>function formatNumber(num) {
+    return num !== undefined ? parseFloat(num).toFixed(2) : 0.00;
+  }
+  async function getFirstWeek() {
+    let companyId = await getGlobalCompanyId();
+    return new Promise((resolve, reject) => {
+      const weekSelector = document.getElementById("week-selector");
+      const driversRef = realtimeDb.ref(`companies/${companyId}/drivers`);
+      driversRef.on('value', snapshot => {
+        const drivers = snapshot.val();
+        let weeks = new Set();
+        let firstWeek;
+        for (const driverId in drivers) {
+          const driver = drivers[driverId];
+          for (const week in driver.weeks) {
+            weeks.add(week);
+            if (!firstWeek) firstWeek = week;
+          }
+        }
+        weekSelector.innerHTML = '';
+        weeks.forEach(week => {
+          const option = document.createElement("option");
+          option.value = week;
+          let weekNumber = week;
+          let startDate, endDate;
+          for (const driverId in drivers) {
+            const driver = drivers[driverId];
+            if (driver.weeks && driver.weeks[week] && driver.weeks[week].summary) {
+              startDate = driver.weeks[week].summary.startDate;
+              endDate = driver.weeks[week].summary.endDate;
+              if (startDate && endDate) {
+                break;
+              }
+            }
+          }
+          option.textContent = `Tydzień ${weekNumber} (${startDate} - ${endDate})`;
+          weekSelector.appendChild(option);
+        });
+        if (firstWeek) {
+          resolve(firstWeek);
+        } else {
+          reject("No weeks found.");
+        }
+      });
+    });
+  }
+  function displayAllDrivers() {
+    const weekSelector = document.getElementById("week-selector");
+    weekSelector.addEventListener("change", event => {
+      const selectedWeek = event.target.value;
+      displayDriversForWeek(selectedWeek);
+    });
+  }
+ async function displayDriversForWeek(selectedWeek) {
+    let companyId = await getGlobalCompanyId();
+    const driversDataContainer = document.getElementById('drivers-data-body');
+    const driversRef = realtimeDb.ref(`companies/${companyId}/drivers`);
+    driversRef.off();
+    driversRef.on('value', snapshot => {
+      const drivers = snapshot.val();
+      let driverRows = [];
+      const driverFilter = document.getElementById("driver-filter").value;
+      for (const driverId in drivers) {
+        if (driverFilter && !driverId.includes(driverFilter)) {
+          continue;
+        }
+        const driver = drivers[driverId];
+        if (driver.weeks[selectedWeek]) {
+          const weekData = driver.weeks[selectedWeek];
+          if (weekData.summary) {
+            const driverRow = document.createElement('tr');
+            const saveButton = document.createElement('button');
+            saveButton.id = `save-button-${driverId}`;
+            saveButton.innerText = 'Zapisz';
+            saveButton.style.display = 'none';
+            driverRow.innerHTML = `
+  <td>${driverId}</td>
+  <td>${selectedWeek}</td>
+  <td>${weekData.summary.city || 'N/A'}</td>
+  <td>${weekData.summary.service ? weekData.summary.service : '0'}</td>
+  <td>${formatNumber(weekData.summary.kursy)}</td>
+  <td>${formatNumber(weekData.summary.przychod_dodatkowy)}</td>
+  <td>${formatNumber(weekData.summary.commission)}</td>
+  <td>${formatNumber(weekData.summary.gotowka)}</td>
+  <td>${formatNumber(weekData.summary.vat_przejazdy + weekData.summary.vat_dodatkowy)}</td>
+  <td>${formatNumber(weekData.summary.vat_bonus)}</td>
+  <td><input id="partner-value-${driverId}" value="${formatNumber(weekData.summary.partner)}" disabled></td>
+  <td>${formatNumber(weekData.summary.zus)}</td>
+  <td>${formatNumber(weekData.summary.inne)}</td>
+  <td>${formatNumber(weekData.summary.wynajem)}</td>
+  <td>${formatNumber(weekData.summary.zwrot_kosztow)}</td>
+  <td>${formatNumber(weekData.summary.podatek_do_zaplaty)}</td>
+  <td>${formatNumber(weekData.summary.total)}</td>
+  <td>
+    <select id="operation-select-${driverId}">
+      <option value="Rozliczony">Rozliczony</option>
+      <option value="Przelew wysłany">Przelew wysłany</option>
+      <option value="Przyjęta gotówka">Przyjęta gotówka</option>
+      <option value="Edytuj">Edytuj</option>
+    </select>
+  </td>
+  <td>${formatNumber(driver.balance)}</td>
+
+  `;
+            driversDataContainer.appendChild(driverRow);
+            const operationSelect = document.getElementById(`operation-select-${driverId}`);
+            const partnerInput = document.getElementById(`partner-value-${driverId}`);
+            console.log("Operation select element: ", operationSelect);  // Проверка элемента operationSelect
+            console.log("Partner input element: ", partnerInput);  // Проверка элемента partnerInput
+
+
+            driverRow.querySelector('td:last-child').appendChild(saveButton);
+            driverRows.push({
+              element: driverRow,
+              appElements: [],
+              total: weekData.summary.total,
+              id: driverId,
+              driverData: driver
+            });
+
+
+            if (weekData.apps) {
+              for (const appName in weekData.apps) {
+                const appData = weekData.apps[appName];
+                const appRow = document.createElement('tr');
+                appRow.innerHTML = `
+                <td></td>
+                <td></td>
+                <td></td>
+                <td></td>
+                <td>${appName}</td>
+                <td>${formatNumber(appData.kursy)}</td>
+                <td>${formatNumber(appData.przychod_dodatkowy)}</td>
+                <td>${formatNumber(appData.commission)}</td>
+                <td>${formatNumber(appData.gotowka)}</td>
+                <td>${formatNumber(appData.vat_przejazdy + appData.vat_dodatkowy)}</td>
+                <td>${formatNumber(appData.vat_bonus)}</td>
+                <td>${formatNumber(appData.partner)}</td>
+                <td>${formatNumber(appData.zus)}</td>
+                <td>${formatNumber(appData.wynajem)}</td>
+                <td>${formatNumber(appData.zwrot_kosztow)}</td>
+                <td>${formatNumber(appData.podatek_do_zaplaty)}</td>
+                <td>${formatNumber(appData.total)}</td>
+                <td>${formatNumber(appData.balance)}</td>
+                <td>${formatNumber(appData.balance)}</td>
+              `;
+                appRow.style.display = 'none';
+                driverRow.addEventListener('click', () => {
+                  if (appRow.style.display === 'none') {
+                    appRow.style.display = 'table-row';
+                  } else {
+                    appRow.style.display = 'none';
+                  }
+                });
+                driverRows[driverRows.length - 1].appElements.push(appRow);
+              }
+            }
+          }
+        }
+      }
+      driversDataContainer.innerHTML = '';
+      driverRows.sort((a, b) => b.total - a.total)
+        .forEach(driverRow => {
+          driversDataContainer.appendChild(driverRow.element);
+          driverRow.appElements.forEach(appRow => {
+            driversDataContainer.appendChild(appRow);
+          });
+        });
+    });
+    driversDataContainer.addEventListener('change', event => {
+      const target = event.target;
+
+      const driverId = target.id.split('-').pop();
+
+
+      if (target.tagName === 'SELECT') {
+        const selectedOperation = target.value;
+        console.log("Selected operation: ", selectedOperation);
+        let updatedDriverData = {};
+        if (selectedOperation === 'Przelew wysłany') {
+          updatedDriverData.balance = 0;
+          realtimeDb.ref(`companies/${companyId}/companies/${companyId}/drivers${driverId}`).update({ balance: updatedDriverData.balance });
+        }
+        else if (selectedOperation === 'Przyjęta gotówka') {
+          const cashReceived = prompt("Wprowadź kwotę przyjętej gotówki");
+          if (cashReceived && !isNaN(cashReceived)) {
+            realtimeDb.ref(`companies/${companyId}/drivers${driverId}/balance`).once('value').then(snapshot => {
+              const currentBalance = snapshot.val();
+              updatedDriverData.balance = currentBalance - Number(cashReceived);
+              realtimeDb.ref(`companies/${companyId}/companies/${companyId}/drivers${driverId}`).update({ balance: updatedDriverData.balance });
+            });
+          } else {
+            alert('Proszę wprowadzić prawidłową liczbę');
+            return;
+          }
+        } else if (selectedOperation === 'Edytuj') {
+          console.log("Entered 'Edytuj' case");
+          document.getElementById(`save-button-${driverId}`).style.display = 'block'; // обновлено
+          document.getElementById(`partner-value-${driverId}`).disabled = false; // обновлено
+        }
+        updatedDriverData.operation = selectedOperation;
+        realtimeDb.ref(`companies/${companyId}/drivers${driverId}/weeks/${selectedWeek}/summary`).update({ status: updatedDriverData.operation });
+      } else if (target.tagName === 'INPUT') {
+        const newPartnerValue = Number(target.value); // обновлено
+        realtimeDb.ref(`companies/${companyId}/drivers${driverId}`).once('value').then(snapshot => {
+          let updatedDriverData = snapshot.val();
+          const oldPartnerValue = updatedDriverData.weeks[selectedWeek].summary.partner;
+          updatedDriverData.weeks[selectedWeek].summary.partner = newPartnerValue;
+          updatedDriverData.weeks[selectedWeek].summary.total = updatedDriverData.weeks[selectedWeek].summary.total + oldPartnerValue - newPartnerValue;
+          realtimeDb.ref(`companies/${companyId}/drivers${driverId}/weeks/${selectedWeek}/summary`).update(updatedDriverData.weeks[selectedWeek].summary);
+        });
+        let updatedDriverData = {};
+        updatedDriverData.weeks = { ...driver.weeks };
+        const oldPartnerValue = updatedDriverData.weeks[selectedWeek].summary.partner;
+        updatedDriverData.weeks[selectedWeek].summary.partner = newPartnerValue;
+        updatedDriverData.weeks[selectedWeek].summary.total = updatedDriverData.weeks[selectedWeek].summary.total + oldPartnerValue - newPartnerValue;
+        realtimeDb.ref(`companies/${companyId}/drivers${driverId}/weeks/${selectedWeek}/summary`).update(updatedDriverData.weeks[selectedWeek].summary);
+      }
+    });
+
+    driversDataContainer.addEventListener('click', event => {
+      const target = event.target;
+
+      if (target.tagName !== 'BUTTON') {
+        return;
+      }
+
+      // Получить driverId из id целевого элемента
+      const driverId = target.id.split('-').pop();
+
+      event.preventDefault();
+      console.log("Save button clicked");
+      const newPartnerValue = Number(document.getElementById(`partner-value-${driverId}`).value); // обновлено
+      realtimeDb.ref(`companies/${companyId}/drivers${driverId}`).once('value').then(snapshot => {
+        let updatedDriverData = snapshot.val();
+        updatedDriverData.weeks[selectedWeek].summary.partner = newPartnerValue;
+        updatedDriverData.weeks[selectedWeek].summary.total = updatedDriverData.weeks[selectedWeek].summary.total - oldPartnerValue + newPartnerValue;
+        realtimeDb.ref(`companies/${companyId}/drivers${driverId}`).update(updatedDriverData);
+        realtimeDb.ref(`companies/${companyId}/drivers${driverId}/weeks/${selectedWeek}/summary`).update({ partner: newPartnerValue });
+        target.disabled = true;
+      });
+      let updatedDriverData = { ...driver };
+      updatedDriverData.weeks[selectedWeek].summary.partner = newPartnerValue;
+      updatedDriverData.weeks[selectedWeek].summary.total = updatedDriverData.weeks[selectedWeek].summary.total - oldPartnerValue + newPartnerValue;
+      realtimeDb.ref(`companies/${companyId}/drivers${driverId}`).update(updatedDriverData);
+      realtimeDb.ref(`companies/${companyId}/drivers${driverId}/weeks/${selectedWeek}/summary`).update({ partner: newPartnerValue });
+      target.disabled = true;
+    });
+  }
+
+  document.getElementById("driver-filter").addEventListener("input", function () {
+    const selectedWeek = document.getElementById("week-selector").value;
+    displayDriversForWeek(selectedWeek);
+  });
+  document.addEventListener("DOMContentLoaded", function () {
+    getFirstWeek()
+      .then(firstWeek => {
+        displayDriversForWeek(firstWeek);
+      })
+      .catch(error => console.error(error));
+  });
+  document.addEventListener("DOMContentLoaded", function () {
+    getFirstWeek()
+      .then(firstWeek => {
+        displayAllDrivers();
+      })
+      .catch(error => console.error(error));
+  });
+
+  function exportTableToCSV(filename) {
+    var csv = [];
+    var rows = document.querySelectorAll("#drivers-data tr");
+
+    for (var i = 0; i < rows.length; i++) {
+      var row = [], cols = rows[i].querySelectorAll("td, th");
+
+      for (var j = 0; j < cols.length; j++) {
+        let cellText = cols[j].innerText;
+
+        // Замена запятых на пробелы в списках приложений
+        if (j === 3) {
+          cellText = cellText.replace(/,/g, ' ');
+        }
+
+        row.push(cellText);
+      }
+
+      csv.push(row.join(","));
+    }
+
+    // Создание CSV файла и его скачивание
+    var csvFile = new Blob([csv.join("\n")], { type: "text/csv" });
+    var downloadLink = document.createElement("a");
+
+    downloadLink.download = filename;
+    downloadLink.href = window.URL.createObjectURL(csvFile);
+    downloadLink.style.display = "none";
+
+    document.body.appendChild(downloadLink);
+    downloadLink.click();
+  }
+
+
+  document.querySelector("#export-button").addEventListener("click", function () {
+    var filename = "drivers_data.csv";
+    exportTableToCSV(filename);
+  });
+  document.querySelectorAll('#drivers-data th').forEach(header => {
+    header.addEventListener('click', () => {
+      const tableElement = document.querySelector('#drivers-data');
+      const body = tableElement.querySelector('tbody');
+      const headerIndex = Array.prototype.indexOf.call(header.parentNode.children, header);
+      const currentSort = header.getAttribute('data-sort') || 'asc';
+
+      const newRows = Array.from(body.querySelectorAll('tr')).sort((rowA, rowB) => {
+        const cellA = rowA.children[headerIndex].innerText;
+        const cellB = rowB.children[headerIndex].innerText;
+
+        switch (currentSort) {
+          case 'asc':
+            return cellA > cellB ? 1 : -1;
+          case 'desc':
+            return cellA < cellB ? 1 : -1;
+          default:
+            return 0;
+        }
+      });
+
+      if (currentSort === 'asc') {
+        header.setAttribute('data-sort', 'desc');
+      } else {
+        header.setAttribute('data-sort', 'asc');
+      }
+
+      newRows.forEach(newRow => {
+        body.appendChild(newRow);
+      });
+    });
+  });
+  
+
+  
+  realtimeDb.ref(`companies/${companyId}/drivers`).on("value", snapshot => {
+    const driversData = snapshot.val();
+    const citySelector = document.getElementById('city-selector');
+
+    // создаем Set для хранения уникальных городов
+    const cities = new Set();
+
+    for (let driverId in driversData) {
+      const driver = driversData[driverId];
+
+      for (let week in driver.weeks) {
+        const weekData = driver.weeks[week];
+
+        if (weekData.summary && weekData.summary.city) {
+          cities.add(weekData.summary.city);
+        }
+      }
+    }
+
+    // очищаем селектор городов
+    citySelector.innerHTML = "";
+
+    // добавляем опции в селектор городов
+    cities.forEach(city => {
+      const option = document.createElement("option");
+      option.value = city;
+      option.textContent = city;
+      citySelector.appendChild(option);
+    });
+  });
+  document.getElementById('city-selector').addEventListener("change", event => {
+    const selectedCity = event.target.value;
+    displayDriversForCity(selectedCity);
+  });
+
+  async function displayDriversForCity(city) {
+    let companyId = await getGlobalCompanyId();
+    const tableBody = document.getElementById('drivers-data-body');
+    const driversRef = realtimeDb.ref(`companies/${companyId}/drivers`);
+
+    driversRef.off(); // отключаем предыдущие обработчики
+
+    driversRef.on("value", snapshot => {
+      const driversData = snapshot.val();
+
+      // очищаем таблицу перед заполнением
+      tableBody.innerHTML = "";
+
+      for (let driverId in driversData) {
+        const driver = driversData[driverId];
+
+        for (let week in driver.weeks) {
+          const weekData = driver.weeks[week];
+
+          // проверяем, есть ли выбранный город у водителя в этой неделе
+          if (weekData.summary && weekData.summary.city === city) {
+            // если да, добавляем водителя в таблицу
+            const row = createRowForDriver(driver, week, weekData); // функция для создания строки в таблице
+            tableBody.appendChild(row);
+          }
+        }
+      }
+    });
+  }</script><style>body{font-family:Poppins,sans-serif;font-weight:400}#week-selector{margin:20px 0;padding:10px;border-radius:20px}#drivers-data{width:100%;border-collapse:separate;border-spacing:0}#drivers-data thead{background-color:#64cc98;color:#121212;font-weight:400}#drivers-data thead th{padding:10px;text-align:left;border:none;font-weight:400}#drivers-data thead th:first-child{border-top-left-radius:10px}#drivers-data thead th:last-child{border-top-right-radius:10px}#drivers-data tbody td{padding:10px;border:1px solid #ddd}#drivers-data tbody tr:last-child td:first-child{border-bottom-left-radius:10px}#drivers-data tbody tr:last-child td:last-child{border-bottom-right-radius:10px}#drivers-data tbody tr:nth-child(even){background-color:#f2f2f2}#drivers-data tbody tr:hover{background-color:#ddd}#drivers-data tbody .action-button{font-weight:400;color:#fff;background-color:#64cc98;border:none;padding:5px 20px;border-radius:20px;cursor:pointer;text-decoration:none}#drivers-data tbody .action-button:hover{background-color:#53b384}</style>

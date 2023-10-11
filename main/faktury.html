@@ -1,0 +1,441 @@
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.0/papaparse.min.js"></script>
+<script src="https://www.gstatic.com/firebasejs/8.6.1/firebase-app.js"></script>
+<script src="https://www.gstatic.com/firebasejs/8.6.1/firebase-firestore.js"></script>
+<script src="https://www.gstatic.com/firebasejs/8.6.1/firebase-auth.js"></script>
+<script src="https://www.gstatic.com/firebasejs/8.6.1/firebase-database.js"></script>
+<script src="https://www.gstatic.com/firebasejs/8.6.1/firebase-storage.js"></script>
+<script type="text/javascript" src="https://cdn.jsdelivr.net/npm/browser-image-compression@2.0.2/dist/browser-image-compression.js"></script>
+
+<script>
+     const firebaseConfig = {
+  apiKey: "AIzaSyDVz0ho0nQb7Sh9o_0wFLZfVJM7aeGYgb0",
+  authDomain: "ccmcolorpartner.firebaseapp.com",
+  databaseURL: "https://ccmcolorpartner-default-rtdb.europe-west1.firebasedatabase.app",
+  projectId: "ccmcolorpartner",
+  storageBucket: "ccmcolorpartner.appspot.com",
+  messagingSenderId: "417966588632",
+  appId: "1:417966588632:web:bf85b1ff7307bb86de8dad",
+  measurementId: "G-WQP6RE6CQ3"
+    };
+
+    firebase.initializeApp(firebaseConfig);
+    console.log(firebaseConfig);
+
+    const auth = firebase.auth();
+    const db = firebase.firestore();
+    const firestoreDb = db;
+    const realtimeDb = firebase.database();
+
+    auth.setPersistence(firebase.auth.Auth.Persistence.LOCAL);
+
+    function loginUser(email, password) {
+        auth.signInWithEmailAndPassword(email, password)
+            .then((userCredential) => {
+                console.log("Пользователь вошел в систему:", userCredential.user);
+                console.log("User UID:", userCredential.user.uid);
+            })
+            .catch((error) => {
+                console.error("Ошибка входа:", error);
+                console.error("Error code:", error.code);
+                console.error("Error message:", error.message);
+            });
+    }
+
+
+    auth.onAuthStateChanged(user => {
+        if (user) {
+            console.log('User signed in:', user);
+        } else {
+            console.log('Пользователь вышел');
+        }
+    });
+
+    window.addEventListener('DOMContentLoaded', (event) => {
+        const loginForm = document.getElementById('login-form');
+        if (loginForm) {
+            loginForm.addEventListener('submit', (e) => {
+                e.preventDefault();
+                const email = document.getElementById('email-input').value;
+                const password = document.getElementById('password-input').value;
+                console.log('Email:', email);
+                console.log('Password:', password);
+                loginUser(email, password);
+            });
+        }
+
+        const logoutButton = document.getElementById("logout-button");
+        if (logoutButton) {
+            logoutButton.onclick = function () {
+                auth.signOut().then(() => {
+                    console.log("User signed out successfully.");
+                }).catch((error) => {
+                    console.error("Error signing out:", error);
+                });
+            };
+        }
+    });
+    function formatNumber(number, digits = 2) {
+        if (typeof number === "number") {
+            return parseFloat(number.toFixed(digits));
+        } else {
+            return number;  // если это не число, просто вернуть исходное значение
+        }
+    }
+</script>
+<form id="invoice-form">
+    <label for="numer-faktury">Numer Faktury:</label><br>
+    <input type="text" id="numer-faktury" name="numer-faktury"><br>
+    <div class="input-group">
+        <label for="purchase-date">Data zakupu:</label><br>
+        <input type="date" id="purchase-date" name="purchase-date"><br>
+        <label for="type">Wybierz typ:</label><br>
+        <select id="type" name="type">
+            <option value="faktura">Faktura</option>
+            <option value="paragon">Paragon z NIPem</option>
+        </select><br>
+        <div id="registration-number-container" style="display: none;">
+            <label for="registration-number">Numer rejestracyjny auta:</label><br>
+            <input type="text" id="registration-number" name="registration-number"><br>
+        </div>
+    </div>
+    <div class="input-group">
+        <label for="nip-seller">NIP Sprzedawcy:</label><br>
+        <input type="number" id="nip-seller" name="nip-seller"><br>
+        <label for="liters">Litry:</label><br>
+        <input type="number" id="liters" name="liters" step="0.01"><br>
+    </div>
+    <div class="input-group">
+        <label for="fuel-type">Rodzaj paliwa:</label><br>
+        <select id="fuel-type" name="fuel-type">
+            <option value="paliwo">Diesel</option>
+            <option value="benzyna">Benzyna</option>
+            <option value="benzyna">LPG</option>
+        </select><br>
+        <label for="gross-amount">Kwota brutto:</label><br>
+        <input type="number" id="gross-amount" name="gross-amount" step="0.01"><br>
+
+    </div>
+    <div class="input-group">
+        <label for="vat-rate">Stawka VAT:</label><br>
+        <select id="vat-rate" name="vat-rate">
+            <option value="0.00">Wybierz stawkę VAT</option>
+            <option value="0.08">8%</option>
+            <option value="0.23">23%</option>
+        </select><br>
+        <label for="vat-amount">Kwota VAT:</label><br>
+        <input type="number" id="vat-amount" name="vat-amount" readonly><br>
+    </div>
+    <div class="input-group">
+        <label for="vat-return">VAT Do zwrotu:</label><br>
+        <input type="number" id="vat-return" name="vat-return" readonly><br>
+        <label for="net-amount">Kwota Netto:</label><br>
+        <input type="number" id="net-amount" name="net-amount" step="0.01" readonly><br>
+
+    </div>
+    <label for="invoice-file">Skan/Zdjęcie faktury/paragonu:</label><br>
+    <input type="file" id="invoice-file" accept=".pdf,.doc,.docx,.jpg,.jpeg,.png" capture>
+    <input type="submit" value="Submit">
+</form>
+
+<script>
+    document.addEventListener("DOMContentLoaded", (e) => {
+    function t() {
+        let e = parseFloat(document.getElementById("gross-amount").value),
+            t = parseFloat(document.getElementById("vat-rate").value),
+            n = (e * t) / (1 + t);
+        (document.getElementById("vat-amount").value = n.toFixed(2)), (document.getElementById("vat-return").value = (0.5 * n).toFixed(2));
+    }
+    function n() {
+        let e = parseFloat(document.getElementById("gross-amount").value),
+            t = parseFloat(document.getElementById("vat-rate").value);
+        document.getElementById("net-amount").value = (e / (1 + t)).toFixed(2);
+    }
+    document.getElementById("gross-amount").addEventListener("input", t),
+        document.getElementById("vat-rate").addEventListener("change", t),
+        document.getElementById("gross-amount").addEventListener("input", n),
+        document.getElementById("vat-rate").addEventListener("change", n),
+        firebase.auth().onAuthStateChanged((e) => {
+            if (e) {
+                let t = e.uid;
+                firebase
+                    .firestore()
+                    .collection("users")
+                    .doc(t)
+                    .get()
+                    .then((e) => {
+                        if (e.exists) {
+                            let t = e.data().driverId;
+                            realtimeDb
+                                .ref()
+                                .child("drivers/" + t + "/invoices")
+                                .on(
+                                    "value",
+                                    (e) => {
+                                        let t = e.val(),
+                                            n = document.getElementById("invoices-table").getElementsByTagName("tbody")[0];
+                                        for (let a in ((n.innerHTML = ""), t)) {
+                                            let l = t[a],
+                                                i = n.insertRow();
+                                            (i.insertCell().innerText = l.numerfaktury),
+                                                (i.insertCell().innerText = l.purchaseDate),
+                                                (i.insertCell().innerText = l.type),
+                                                (i.insertCell().innerText = l.registrationNumber || ""),
+                                                (i.insertCell().innerText = l.nipseller),
+                                                (i.insertCell().innerText = l.liters),
+                                                (i.insertCell().innerText = l.fuelType),
+                                                (i.insertCell().innerText = l.grossAmount),
+                                                (i.insertCell().innerText = l.vatRate),
+                                                (i.insertCell().innerText = l.netAmount),
+                                                (i.insertCell().innerText = l.vatAmount),
+                                                (i.insertCell().innerText = l.vatReturn),
+                                                (i.insertCell().innerText = l.status);
+                                            let o = i.insertCell();
+                                            l.fileURL ? (o.innerHTML = '<a href="' + l.fileURL + '" target="_blank">Zobacz fakturę</a>') : (o.innerText = "Nie ma pliku"),
+                                                (i.insertCell().innerHTML = '<button class="delete-btn" data-invoice-id="' + a + '">Usuń</button>');
+                                        }
+                                    },
+                                    (e) => {
+                                        console.error("Error reading from database", e);
+                                    }
+                                );
+                        } else console.log("No such document!");
+                    })
+                    .catch((e) => {
+                        console.log("Error getting document:", e);
+                    });
+            }
+        }),
+        document.getElementById("net-amount").addEventListener("input", t),
+        document.getElementById("vat-rate").addEventListener("change", t),
+        document.getElementById("type").addEventListener("change", function () {
+            "paragon" === this.value ? (document.getElementById("registration-number-container").style.display = "block") : (document.getElementById("registration-number-container").style.display = "none");
+        }),
+        document.getElementById("net-amount").addEventListener("input", n),
+        document.getElementById("vat-rate").addEventListener("change", n),
+        document.getElementById("invoice-form").addEventListener("submit", function (e) {
+    e.preventDefault();
+    var t, n = document.querySelectorAll("#invoice-form input");
+    if (!n) {
+        console.log("No input elements found in the form.");
+        return;
+    }
+    if (
+        (t =
+            "paragon" === document.getElementById("type").value
+                ? Array.prototype.every.call(n, function (e) {
+                    return "" !== e.value;
+                })
+                : Array.prototype.every.call(n, function (e) {
+                    return "registration-number" === e.id || "" !== e.value;
+                }))
+    ) {
+        let a = {
+            numerfaktury: document.getElementById("numer-faktury").value,
+            purchaseDate: document.getElementById("purchase-date").value,
+            type: document.getElementById("type").value,
+            nipseller: document.getElementById("nip-seller").value,
+            liters: document.getElementById("liters").value,
+            fuelType: document.getElementById("fuel-type").value,
+            grossAmount: document.getElementById("gross-amount").value,
+            vatRate: document.getElementById("vat-rate").value,
+            netAmount: document.getElementById("net-amount").value,
+            vatAmount: document.getElementById("vat-amount").value,
+            vatReturn: document.getElementById("vat-return").value,
+            status: "w trakcie sprawdzenia",
+        };
+        a.registrationNumber || (a.registrationNumber = "Nie dotyczy"), "paragon" === a.type && (a.registrationNumber = document.getElementById("registration-number").value);
+        let l = document.getElementById("invoice-file").files[0];
+        if (l) {
+            var options = {
+                maxSizeMB: 1,
+                maxWidthOrHeight: 1920,
+                useWebWorker: true
+            }
+            imageCompression(l, options)
+                .then(function (compressedFile) {
+                    console.log('compressedFile instanceof Blob', compressedFile instanceof Blob);
+                    console.log(`compressedFile size ${compressedFile.size / 1024 / 1024} MB`);
+                    l = compressedFile; // Use the compressed file instead of the original
+                    uploadFile(l, a);
+                })
+                .catch(function (error) {
+                    console.log(error.message);
+                });
+        } else {
+            uploadFile(l, a);
+        }
+    } else alert("Proszę wypełnić wszystkie pola.");
+});
+
+// Function to upload file
+function uploadFile(l, a) {
+    firebase.auth().onAuthStateChanged((e) => {
+        if (e) {
+            let t = firebase.auth().currentUser.uid;
+            firebase
+                .firestore()
+                .collection("users")
+                .doc(t)
+                .get()
+                .then((e) => {
+                    if (e.exists) {
+                        let t = e.data().driverId,
+                            n = new Date(),
+                            i = n.getDate() - n.getDay() + (0 === n.getDay() ? -6 : 1),
+                            o = new Date(n.setDate(i)),
+                            s = `${o.getFullYear()}-${o.getMonth() + 1}-${o.getDate()}`,
+                            u = firebase.storage().ref(`invoices/${t}/${s}/${l.name}`).put(l);
+                        u.on(
+                            firebase.storage.TaskEvent.STATE_CHANGED,
+                            function (e) {},
+                            function (e) {
+                                console.error(e);
+                            },
+                            function () {
+                                console.log("File uploaded successfully"),
+                                    u.snapshot.ref.getDownloadURL().then(function (e) {
+                                        console.log("File available at", e),
+                                            (a.fileURL = e),
+                                            realtimeDb.ref().child(`drivers/${t}/invoices`).push(a),
+                                            document.getElementById("invoice-form").reset(),
+                                            alert("Faktura została pomyślnie dodana. Możesz dodać kolejną fakturę!");
+                                    });
+                            }
+                        );
+                    } else console.log("No such document!");
+                })
+                .catch((e) => {
+                    console.log("Error getting document:", e);
+                });
+        }
+    });
+}
+
+}),
+    document.getElementById("invoices-table").addEventListener("click", function (e) {
+        if (e.target.classList.contains("delete-btn")) {
+            let t = e.target.getAttribute("data-invoice-id");
+            firebase.auth().onAuthStateChanged((e) => {
+                if (e) {
+                    let n = firebase.auth().currentUser.uid;
+                    firebase
+                        .firestore()
+                        .collection("users")
+                        .doc(n)
+                        .get()
+                        .then((e) => {
+                            if (e.exists) {
+                                let n = e.data().driverId;
+                                realtimeDb
+                                    .ref()
+                                    .child("drivers/" + n + "/invoices/" + t)
+                                    .once("value", function (e) {
+                                        let t = e.val();
+                                        "w trakcie sprawdzenia" === t.status
+                                            ? (firebase
+                                                  .storage()
+                                                  .ref(`invoices/${n}/${t.week}/${t.fileName}`)
+                                                  .delete()
+                                                  .then(function () {
+                                                      console.log("File deleted successfully");
+                                                  })
+                                                  .catch(function (e) {
+                                                      console.error("Error deleting file", e);
+                                                  }),
+                                              r.remove(),
+                                              alert("Faktura została usunięta."))
+                                            : alert('Tylko faktury ze statusem "w trakcie sprawdzenia" mogą być usunięte.');
+                                    });
+                            } else console.log("No such document!");
+                        })
+                        .catch((e) => {
+                            console.log("Error getting document:", e);
+                        });
+                }
+            });
+        }
+    });
+
+</script>
+
+<style>
+    label {
+        font-weight: bold;
+        display: block;
+        margin-bottom: 5px;
+    }
+
+    input[type="number"],
+    input[type="date"],
+    input[type="text"],
+    select {
+        width: 100%;
+        padding: 10px;
+        margin-bottom: 10px;
+        border: 1px solid #ccc;
+        border-radius: 4px;
+        box-sizing: border-box;
+        font-size: 14px;
+    }
+
+    select {
+        height: 34px;
+    }
+
+    .input-group {
+        display: flex;
+        margin-bottom: 10px;
+    }
+
+    .input-group label,
+    .input-group input,
+    .input-group select {
+        flex: 1;
+        margin-right: 10px;
+    }
+
+    .input-group input:last-child,
+    .input-group select:last-child {
+        margin-right: 0;
+    }
+
+    input[type="submit"] {
+        width: 100%;
+        background-color: black;
+        color: #fff;
+        padding: 12px 20px;
+        border: none;
+        border-radius: 30px;
+        cursor: pointer;
+        font-size: 16px;
+        font-weight: bold;
+        transition: background-color 0.3s ease;
+        margin-top: auto;
+    }
+
+    input[type="submit"]:hover {
+        background-color: #45a049;
+    }
+
+    #registration-number-container {
+        display: none;
+    }
+
+    @media screen and (max-width: 768px) {
+        #invoice-form {
+            max-width: 400px;
+        }
+
+        .input-group {
+            flex-wrap: wrap;
+        }
+
+        .input-group label,
+        .input-group input,
+        .input-group select {
+            flex: 0 0 100%;
+            margin-right: 0;
+        }
+    }
+</style>

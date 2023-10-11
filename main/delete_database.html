@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <script src="https://www.gstatic.com/firebasejs/8.6.1/firebase-app.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.6.1/firebase-database.js"></script>
+ 
+    <script src="https://www.gstatic.com/firebasejs/8.6.1/firebase-firestore.js"></script>
+  </head>
+<body>
+  <button onclick="removeWeeks()">Remove All Weeks</button>
+  <button onclick="removeBalances()">Remove All Balances</button>
+
+  <button onclick="transferInvoices()">Transfer Invoices</button>
+
+<select id="weekSelect"></select>
+<button onclick="removeSpecificWeek()">Remove Selected Week</button>
+<div>
+  <label for="oldStatus">Старый статус:</label>
+  <input type="text" id="oldStatus">
+  
+  <label for="newStatus">Новый статус:</label>
+  <input type="text" id="newStatus">
+  
+  <button id="updateStatus">Обновить статус</button>
+</div>
+
+  <script>
+    // TODO: Replace the following with your app's Firebase project configuration
+    var firebaseConfig = {
+        apiKey: "AIzaSyDVz0ho0nQb7Sh9o_0wFLZfVJM7aeGYgb0",
+        authDomain: "ccmcolorpartner.firebaseapp.com",
+        databaseURL: "https://ccmcolorpartner-default-rtdb.europe-west1.firebasedatabase.app",
+        projectId: "ccmcolorpartner",
+        storageBucket: "ccmcolorpartner.appspot.com",
+        messagingSenderId: "417966588632",
+        appId: "1:417966588632:web:bf85b1ff7307bb86de8dad",
+        measurementId: "G-WQP6RE6CQ3"
+    };
+
+    // Initialize Firebase
+    firebase.initializeApp(firebaseConfig);
+    var database = firebase.database();
+
+    function removeWeeks() {
+      let driversRef = database.ref('drivers');
+
+      driversRef.once('value').then(snapshot => {
+        snapshot.forEach(driverSnapshot => {
+          let weeksRef = driversRef.child(driverSnapshot.key).child('weeks');
+          weeksRef.remove()
+            .then(() => console.log(`Removed weeks for driver: ${driverSnapshot.key}`))
+            .catch(error => console.error(`Error occurred while removing weeks for driver: ${driverSnapshot.key}. Error: ${error}`));
+        });
+      }).catch(error => console.error(`Error occurred while retrieving drivers. Error: ${error}`));
+    }
+
+    function removeBalances() {
+      let driversRef = database.ref('drivers');
+
+      driversRef.once('value').then(snapshot => {
+        snapshot.forEach(driverSnapshot => {
+          let driverRef = driversRef.child(driverSnapshot.key);
+          driverRef.update({ balance: 0 })
+            .then(() => console.log(`Removed balance for driver: ${driverSnapshot.key}`))
+            .catch(error => console.error(`Error occurred while removing balance for driver: ${driverSnapshot.key}. Error: ${error}`));
+        });
+      }).catch(error => console.error(`Error occurred while retrieving drivers. Error: ${error}`));
+    }
+  
+    function transferInvoices() {
+    var fromDriverId = "Lukasz Mnich"; // Replace with actual Marlena Krasnicka's driver id
+    var toDriverId = "Lukasz Mnich"; // Replace with actual Marlena Rusinska's driver id
+
+    // Fetch invoices from Marlena Krasnicka
+    firebase.database().ref().child('drivers/' + fromDriverId + '/invoices').once('value', function(fromUserSnapshot) {
+        let fromUserInvoices = fromUserSnapshot.val();
+
+        if (fromUserInvoices) {
+            // Fetch Marlena Rusinska's data
+            firebase.database().ref().child('drivers/' + toDriverId + '/invoices').once('value', function(toUserSnapshot) {
+                let toUserInvoices = toUserSnapshot.val() || {};
+
+                // Merge invoices
+                for (let invoiceId in fromUserInvoices) {
+                    toUserInvoices[invoiceId] = fromUserInvoices[invoiceId];
+                }
+
+                // Save the new invoices to Marlena Rusinska
+                firebase.database().ref().child('drivers/' + toDriverId + '/invoices').set(toUserInvoices, function(error) {
+                    if (error) {
+                        console.error("Error updating Marlena Rusinska's invoices: ", error);
+                    } else {
+                        console.log("Invoices transferred successfully!");
+
+                        // Optionally, clear Marlena Krasnicka's invoices
+                        // firebase.database().ref().child('drivers/' + fromDriverId + '/invoices').remove();
+                    }
+                });
+            });
+        } else {
+            console.log("No invoices found for Marlena Krasnicka!");
+        }
+    });
+}
+// Function to populate the driver dropdown
+function populateDriverDropdown() {
+    let driversRef = database.ref('drivers');
+    let driverSelect = document.getElementById('driverSelect');
+
+    driversRef.once('value').then(snapshot => {
+        snapshot.forEach(driverSnapshot => {
+            let option = document.createElement('option');
+            option.value = driverSnapshot.key;
+            option.text = driverSnapshot.key;
+            driverSelect.appendChild(option);
+        });
+    }).catch(error => console.error(`Error occurred while retrieving drivers. Error: ${error}`));
+}
+
+function populateWeeksDropdown() {
+    let driversRef = database.ref('drivers');
+    let weekSelect = document.getElementById('weekSelect');
+    let weeksSet = new Set();  // Это множество для хранения уникальных недель
+
+    driversRef.once('value').then(snapshot => {
+        snapshot.forEach(driverSnapshot => {
+            let weeks = driverSnapshot.child('weeks').val();
+            if (weeks) {
+                for (let week in weeks) {
+                    weeksSet.add(week);
+                }
+            }
+        });
+
+        // Clear previous weeks from the dropdown
+        weekSelect.innerHTML = "";
+
+        // Добавьте уникальные недели в выпадающий список
+        weeksSet.forEach(week => {
+            let option = document.createElement('option');
+            option.value = week;
+            option.text = week;
+            weekSelect.appendChild(option);
+        });
+    }).catch(error => console.error(`Error occurred while retrieving weeks. Error: ${error}`));
+}
+
+function removeSpecificWeek() {
+    let weekId = document.getElementById('weekSelect').value;
+
+    if (!weekId) {
+        console.error("Week must be selected!");
+        return;
+    }
+
+    let driversRef = database.ref('drivers');
+    driversRef.once('value').then(snapshot => {
+        snapshot.forEach(driverSnapshot => {
+            let weekRef = database.ref('drivers/' + driverSnapshot.key + '/weeks/' + weekId);
+            weekRef.remove()
+                .then(() => console.log(`Removed week ${weekId} for driver: ${driverSnapshot.key}`))
+                .catch(error => console.error(`Error occurred while removing week ${weekId} for driver: ${driverSnapshot.key}. Error: ${error}`));
+        });
+    }).catch(error => console.error(`Error occurred while retrieving drivers. Error: ${error}`));
+}
+
+// Populate driver dropdown and weeks dropdown on page load
+window.onload = function() {
+    populateDriverDropdown();
+    populateWeeksDropdown();
+};
+const oldStatusInput = document.getElementById('oldStatus');
+const newStatusInput = document.getElementById('newStatus');
+const updateButton = document.getElementById('updateStatus');
+
+updateButton.addEventListener('click', function() {
+    const oldStatus = oldStatusInput.value;
+const newStatus = newStatusInput.value;
+console.log("Old Status:", oldStatus);
+console.log("New Status:", newStatus);
+
+
+    // Получите ссылку на вашу базу данных
+    const dbRef = database.ref('drivers');
+
+    // Запросите все данные водителей
+    dbRef.once('value').then(snapshot => {
+        snapshot.forEach(childSnapshot => {
+            const driverData = childSnapshot.val();
+if (driverData.weeks) {  // Check if weeks are defined for the driver
+    for(let week in driverData.weeks) {
+        if(driverData.weeks[week].summary && driverData.weeks[week].summary.status === oldStatus) {
+            // Обновление статуса
+            dbRef.child(childSnapshot.key).child('weeks').child(week).child('summary').update({status: newStatus});
+        }
+    }
+}
+
+        });
+    });
+});
+
+    </script>
+
+</body>
+</html>

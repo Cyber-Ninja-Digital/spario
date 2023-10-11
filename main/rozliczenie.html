@@ -1,0 +1,396 @@
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.0/papaparse.min.js"></script>
+<script src="https://www.gstatic.com/firebasejs/8.6.1/firebase-app.js"></script>
+<script src="https://www.gstatic.com/firebasejs/8.6.1/firebase-firestore.js"></script>
+<script src="https://www.gstatic.com/firebasejs/8.6.1/firebase-auth.js"></script>
+<script src="https://www.gstatic.com/firebasejs/8.6.1/firebase-database.js"></script>
+<script src="https://www.gstatic.com/firebasejs/8.6.1/firebase-storage.js"></script>
+
+<script>
+    const firebaseConfig = {
+        databaseURL: "https://crmgodelta-default-rtdb.europe-west1.firebasedatabase.app",
+        apiKey: "AIzaSyBHXIuwuPviUaOUlpzHGHgo3Qh5BxvyOQY",
+        authDomain: "crmgodelta.firebaseapp.com",
+        projectId: "crmgodelta",
+        storageBucket: "crmgodelta.appspot.com",
+        messagingSenderId: "895480844926",
+        appId: "1:895480844926:web:bcc1b4f17cf8a5ab4f3e2f",
+        measurementId: "G-DQMX104TNF",
+    };
+
+    firebase.initializeApp(firebaseConfig);
+    console.log(firebaseConfig);
+
+    const auth = firebase.auth();
+    const db = firebase.firestore();
+    const firestoreDb = db; // используйте уже созданный экземпляр
+    const realtimeDb = firebase.database();
+
+    auth.setPersistence(firebase.auth.Auth.Persistence.LOCAL);
+
+    function loginUser(email, password) {
+        auth.signInWithEmailAndPassword(email, password)
+            .then((userCredential) => {
+                console.log("Пользователь вошел в систему:", userCredential.user);
+                console.log("User UID:", userCredential.user.uid);
+            })
+            .catch((error) => {
+                console.error("Ошибка входа:", error);
+                console.error("Error code:", error.code);
+                console.error("Error message:", error.message);
+            });
+    }
+
+
+    auth.onAuthStateChanged(user => {
+        if (user) {
+            console.log('User signed in:', user);
+        } else {
+            console.log('Пользователь вышел');
+        }
+    });
+
+    window.addEventListener('DOMContentLoaded', (event) => {
+        const loginForm = document.getElementById('login-form');
+        if (loginForm) {
+            loginForm.addEventListener('submit', (e) => {
+                e.preventDefault();
+                const email = document.getElementById('email-input').value;
+                const password = document.getElementById('password-input').value;
+                console.log('Email:', email);
+                console.log('Password:', password);
+                loginUser(email, password);
+            });
+        }
+
+        const logoutButton = document.getElementById("logout-button");
+        if (logoutButton) {
+            logoutButton.onclick = function () {
+                auth.signOut().then(() => {
+                    console.log("User signed out successfully.");
+                }).catch((error) => {
+                    console.error("Error signing out:", error);
+                });
+            };
+        }
+    });
+    function formatNumber(number, digits = 2) {
+        if (typeof number === "number") {
+            return parseFloat(number.toFixed(digits));
+        } else {
+            return number;  // если это не число, просто вернуть исходное значение
+        }
+    }
+</script>
+<script>
+
+    document.addEventListener('DOMContentLoaded', (event) => {
+        const statusFilter = document.getElementById('status-filter');
+        const zusFilter = document.getElementById('zus-filter');
+        const workStatusFilter = document.getElementById('work-status-filter');
+        const applyFiltersButton = document.getElementById('apply-filters');
+        const driversTable = document.getElementById('drivers-table-body');
+        let cars;
+
+        const addRowForDriver = (driverId, driver) => {
+            console.log('In addRowForDriver', driverId, driver);
+            const row = document.createElement('tr');
+            const idCell = document.createElement('td');
+            const statusCell = document.createElement('td');
+            const zusCell = document.createElement('td');
+            const workStatusCell = document.createElement('td');
+            const assignedCarCell = document.createElement('td');
+            const pitCell = document.createElement('td');
+
+            row.setAttribute('data-driver-id', driverId);
+
+
+            pitCell.textContent = driver.pit ? 'tak' : 'nie';
+            idCell.textContent = driverId;
+
+
+            const workStatusSelect = createSelectElement(driver.workStatus, ['Uczeń/Student', 'Osoba nie pracująca gdzie indziej', 'Osoba pracująca gdzie indziej', 'Osoba do 26 roku życia']);
+            workStatusSelect.className = 'work-status-select';
+            workStatusSelect.addEventListener('change', function () {
+                firebase.database().ref(`drivers/${driverId}/workStatus`).set(this.value);
+
+                let pit;
+
+                if (this.value === 'Uczeń/Student') {
+
+                    zusSelect.value = 'Uczeń/Student';
+                    zusSelect.disabled = true;
+                    firebase.database().ref(`drivers/${driverId}/zusType`).set('');
+                    pit = false;
+                } else if (this.value === 'Osoba do 26 roku życia') {
+
+                    pit = false;
+                    zusSelect.disabled = false;
+                } else {
+
+                    pit = true;
+                    zusSelect.disabled = false;
+
+                    zusSelect.value = 'zus';
+                    firebase.database().ref(`drivers/${driverId}/zusType`).set('zus');
+                }
+
+                firebase.database().ref(`drivers/${driverId}/pit`).set(pit);
+            });
+            workStatusCell.appendChild(workStatusSelect);
+
+
+
+
+            //...
+            const statusSelect = createSelectElement(driver.status, ['active', 'inactive']);
+            statusSelect.className = 'status-select';
+            statusSelect.addEventListener('change', function () {
+                firebase.database().ref(`drivers/${driverId}/status`).set(this.value);
+
+                // Здесь проверяем новый статус
+                if (this.value === 'inactive') {
+                    zusSelect.value = '';
+                    zusSelect.disabled = true;
+                    workStatusSelect.value = '';
+                    workStatusSelect.disabled = true;
+
+                } else if (this.value === 'active') {
+                    zusSelect.value = 'zus';
+                    zusSelect.disabled = false;
+                    workStatusSelect.value = 'Osoba nie pracująca gdzie indziej';
+                    workStatusSelect.disabled = false;
+                }
+            });
+            statusCell.appendChild(statusSelect);
+            //...
+
+
+
+            //...
+            const zusSelect = createSelectElement(driver.zusType, ['zus', 'zusWorkContract', 'Uczeń/Student']);
+            zusSelect.className = 'zus-select';
+            if (driver.workStatus === 'Uczeń/Student') {
+                zusSelect.disabled = true;
+            }
+            zusSelect.addEventListener('change', function () {
+                firebase.database().ref(`drivers/${driverId}/zusType`).set(this.value);
+                // проверяем, если новое значение равно 'bazowy', тогда устанавливаем pit в false
+                if (this.value === 'wybierz') {
+                    firebase.database().ref(`drivers/${driverId}/pit`).set(false);
+                }
+            });
+            zusCell.appendChild(zusSelect);
+            //...
+
+            if (driver.status === 'inactive') {
+                //statusSelect.disabled = true;
+                zusSelect.disabled = true;
+                workStatusSelect.disabled = true;
+            }
+
+
+            if (driver.car && cars[driver.car]) {
+                const car = cars[driver.car];
+                assignedCarCell.textContent = `${car.make} ${car.model}`;
+            } else {
+                assignedCarCell.textContent = 'Brak samochodu.';
+            }
+
+
+            row.appendChild(idCell);
+            row.appendChild(statusCell);
+            row.appendChild(zusCell);
+            row.appendChild(workStatusCell);
+            row.appendChild(pitCell);
+            row.appendChild(assignedCarCell);
+            driversTable.appendChild(row);
+        };
+
+        firebase.database().ref('admin/carsrent').once('value', snapshot => {
+            cars = snapshot.val();
+            console.log('Loaded cars:', cars);
+
+            firebase.database().ref('drivers').once('value', function (snapshot) {
+                const drivers = snapshot.val();
+                document.getElementById('drivers-table-body').innerHTML = '';
+
+                for (const driverId in drivers) {
+                    const driver = drivers[driverId];
+                    if ((statusFilter.value === '' || driver.status === statusFilter.value) &&
+                        (zusFilter.value === '' || driver.zusType === zusFilter.value) &&
+                        (workStatusFilter.value === '' || driver.workStatus === workStatusFilter.value)) {
+                        addRowForDriver(driverId, driver);
+                    }
+                }
+            });
+        });
+
+        applyFiltersButton.addEventListener('click', function () {
+            firebase.database().ref('drivers').once('value').then(function (snapshot) {
+                const drivers = snapshot.val();
+                document.getElementById('drivers-table-body').innerHTML = '';
+
+                for (const driverId in drivers) {
+                    const driver = drivers[driverId];
+                    if ((statusFilter.value === '' || driver.status === statusFilter.value) &&
+                        (zusFilter.value === '' || driver.zusType === zusFilter.value) &&
+                        (workStatusFilter.value === '' || driver.workStatus === workStatusFilter.value)) {
+                        addRowForDriver(driverId, driver);
+                    }
+                }
+            });
+        });
+
+        function createSelectElement(currentValue, options) {
+            const selectElement = document.createElement('select');
+            const defaultOption = document.createElement('option');
+
+            defaultOption.value = '';
+            defaultOption.textContent = 'wybierz';
+            selectElement.appendChild(defaultOption);
+
+            options.forEach(optionValue => {
+                const option = document.createElement('option');
+                option.value = optionValue;
+                option.textContent = optionValue;
+                if (optionValue === currentValue) {
+                    option.selected = true;
+                }
+                selectElement.appendChild(option);
+            });
+
+            return selectElement;
+        }
+
+        applyFiltersButton.addEventListener('click', function () {
+            firebase.database().ref('drivers').once('value').then(function (snapshot) {
+                const drivers = snapshot.val();
+                document.getElementById('drivers-table-body').innerHTML = '';
+
+                for (const driverId in drivers) {
+                    const driver = drivers[driverId];
+                    if ((statusFilter.value === '' || driver.status === statusFilter.value) &&
+                        (zusFilter.value === '' || driver.zusType === zusFilter.value) &&
+                        (workStatusFilter.value === '' || driver.workStatus === workStatusFilter.value)) {
+                        addRowForDriver(driverId, driver);
+                    }
+                }
+            });
+        });
+    });
+</script>
+<div style="display: flex; align-items: center; gap: 20px;">
+    <div>
+        <label for="status-filter">Status:</label>
+        <select id="status-filter">
+            <option value="">Wszystkie</option>
+            <option value="active">Aktywny</option>
+            <option value="inactive">Nieaktywny</option>
+        </select>
+    </div>
+    <div>
+        <label for="zus-filter">ZUS:</label>
+        <select id="zus-filter">
+            <option value="">Wszystkie</option>
+            <option value="zus">ZUS</option>
+            <option value="zusWorkContract">ZUS Work Contract</option>
+        </select>
+    </div>
+    <div>
+        <label for="work-status-filter">Status pracy:</label>
+        <select id="work-status-filter">
+            <option value="">Wszystkie</option>
+            <option value="Uczeń/Student">Uczeń/Student</option>
+            <option value="Osoba nie pracująca gdzie indziej">Osoba nie pracująca gdzie indziej</option>
+            <option value="Osoba pracująca gdzie indziej">Osoba pracująca gdzie indziej</option>
+            <option value="Osoba do 26 roku życia">Osoba do 26 roku życia</option>
+        </select>
+    </div>
+    <button id="apply-filters">Zastosuj filtry</button>
+</div>
+<table id="drivers-table">
+    <thead>
+        <tr>
+            <th>Driver ID</th>
+            <th>Status</th>
+            <th>ZUS</th>
+            <th>Status pracy</th>
+            <th>PIT</th>
+            <th>Informacje o samochodzie</th> <!-- New column header -->
+        </tr>
+
+    </thead>
+    <tbody id="drivers-table-body">
+        <!-- Здесь будут строки для каждого водителя -->
+    </tbody>
+</table>
+<style>
+    body {
+        font-family: 'Poppins', sans-serif;
+        font-weight: 400;
+    }
+
+    #drivers-table {
+        width: 100%;
+        border-collapse: separate;
+        border-spacing: 0;
+    }
+
+    #drivers-table thead {
+        background-color: #64cc98;
+        color: #121212;
+        font-weight: 400;
+    }
+
+    #drivers-table thead th {
+        padding: 10px;
+        text-align: left;
+        border: none;
+        font-weight: 400;
+    }
+
+    #drivers-table thead th:first-child {
+        border-top-left-radius: 10px;
+    }
+
+    #drivers-table thead th:last-child {
+        border-top-right-radius: 10px;
+    }
+
+    #drivers-table-body tr td {
+        padding: 10px;
+        border: 1px solid #ddd;
+    }
+
+    #drivers-table-body tr:last-child td:first-child {
+        border-bottom-left-radius: 10px;
+    }
+
+    #drivers-table-body tr:last-child td:last-child {
+        border-bottom-right-radius: 10px;
+    }
+
+    #drivers-table-body tr:nth-child(even) {
+        background-color: #f2f2f2;
+    }
+
+    #drivers-table-body tr:hover {
+        background-color: #ddd;
+    }
+
+    #drivers-table-body .action-button {
+        font-weight: 400;
+        color: #fff;
+        background-color: #64cc98;
+        border: none;
+        padding: 5px 20px;
+        border-radius: 20px;
+        cursor: pointer;
+        text-decoration: none;
+    }
+
+    #drivers-table-body .action-button:hover {
+        background-color: #53b384;
+    }
+</style>

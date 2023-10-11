@@ -1,0 +1,380 @@
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.0/papaparse.min.js"></script>
+<script src="https://www.gstatic.com/firebasejs/8.6.1/firebase-app.js"></script>
+<script src="https://www.gstatic.com/firebasejs/8.6.1/firebase-firestore.js"></script>
+<script src="https://www.gstatic.com/firebasejs/8.6.1/firebase-auth.js"></script>
+<script src="https://www.gstatic.com/firebasejs/8.6.1/firebase-database.js"></script>
+<script src="https://www.gstatic.com/firebasejs/8.6.1/firebase-storage.js"></script>
+<script>
+    const firebaseConfig = {
+        apiKey: "AIzaSyDVz0ho0nQb7Sh9o_0wFLZfVJM7aeGYgb0",
+        authDomain: "ccmcolorpartner.firebaseapp.com",
+        databaseURL: "https://ccmcolorpartner-default-rtdb.europe-west1.firebasedatabase.app",
+        projectId: "ccmcolorpartner",
+        storageBucket: "ccmcolorpartner.appspot.com",
+        messagingSenderId: "417966588632",
+        appId: "1:417966588632:web:bf85b1ff7307bb86de8dad",
+        measurementId: "G-WQP6RE6CQ3"
+    };
+
+    firebase.initializeApp(firebaseConfig);
+    console.log(firebaseConfig);
+
+    const auth = firebase.auth();
+    const db = firebase.firestore();
+    const firestoreDb = db;
+    const realtimeDb = firebase.database();
+
+    auth.setPersistence(firebase.auth.Auth.Persistence.LOCAL);
+
+    function loginUser(email, password) {
+        auth.signInWithEmailAndPassword(email, password)
+            .then((userCredential) => {
+                console.log("Пользователь вошел в систему:", userCredential.user);
+                console.log("User UID:", userCredential.user.uid);
+            })
+            .catch((error) => {
+                console.error("Ошибка входа:", error);
+                console.error("Error code:", error.code);
+                console.error("Error message:", error.message);
+            });
+    }
+
+
+    auth.onAuthStateChanged(user => {
+        if (user) {
+            console.log('User signed in:', user);
+        } else {
+            console.log('Пользователь вышел');
+        }
+    });
+
+    window.addEventListener('DOMContentLoaded', (event) => {
+        const loginForm = document.getElementById('login-form');
+        if (loginForm) {
+            loginForm.addEventListener('submit', (e) => {
+                e.preventDefault();
+                const email = document.getElementById('email-input').value;
+                const password = document.getElementById('password-input').value;
+                console.log('Email:', email);
+                console.log('Password:', password);
+                loginUser(email, password);
+            });
+        }
+
+        const logoutButton = document.getElementById("logout-button");
+        if (logoutButton) {
+            logoutButton.onclick = function () {
+                auth.signOut().then(() => {
+                    console.log("User signed out successfully.");
+                }).catch((error) => {
+                    console.error("Error signing out:", error);
+                });
+            };
+        }
+    });
+    function formatNumber(number, digits = 2) {
+        if (typeof number === "number") {
+            return parseFloat(number.toFixed(digits));
+        } else {
+            return number;  // если это не число, просто вернуть исходное значение
+        }
+    }
+</script>
+<style>
+    body {
+        font-family: 'Poppins', sans-serif;
+        font-weight: 400;
+    }
+
+    #invoices-table {
+        width: 100%;
+        border-collapse: separate;
+        border-spacing: 0;
+    }
+
+    #invoices-table thead {
+        background-color: #64cc98;
+        color: #121212;
+        font-weight: 400;
+    }
+
+    #invoices-table thead th {
+        padding: 10px;
+        text-align: left;
+        border: none;
+        font-weight: 400;
+    }
+
+    #invoices-table thead th:first-child {
+        border-top-left-radius: 10px;
+    }
+
+    #invoices-table thead th:last-child {
+        border-top-right-radius: 10px;
+    }
+
+    #invoices-table tbody td {
+        padding: 10px;
+        border: 1px solid #ddd;
+    }
+
+    #invoices-table tbody tr:last-child td:first-child {
+        border-bottom-left-radius: 10px;
+    }
+
+    #invoices-table tbody tr:last-child td:last-child {
+        border-bottom-right-radius: 10px;
+    }
+
+    #invoices-table tbody tr:nth-child(even) {
+        background-color: #f2f2f2;
+    }
+
+    #invoices-table tbody tr:hover {
+        background-color: #ddd;
+    }
+
+    #invoices-table tbody .action-button {
+        font-weight: 400;
+        color: #fff;
+        background-color: #64cc98;
+        border: none;
+        padding: 5px 20px;
+        border-radius: 20px;
+        cursor: pointer;
+        text-decoration: none;
+    }
+
+    #invoices-table tbody .action-button:hover {
+        background-color: #53b384;
+    }
+</style>
+<label for="month-filter">Filtruj według ms:</label>
+<select id="month-filter">
+    <option value="">Wybierz miesiąc</option>
+    <option value="01">Styczeń</option>
+    <option value="02">Luty</option>
+    <option value="03">Marzec</option>
+    <option value="04">Kwiecień</option>
+    <option value="05">Maj</option>
+    <option value="06">Czerwiec</option>
+    <option value="07">Lipiec</option>
+    <option value="08">Sierpień</option>
+    <option value="09">Wrzesień</option>
+    <option value="10">Październik</option>
+    <option value="11">Listopad</option>
+    <option value="12">Grudzień</option>
+</select>
+<label for="type-filter">Filtruj według typu:</label>
+<select id="type-filter"></select>
+<label for="status-filter">Filtruj według statusów:</label>
+<select id="status-filter"> 
+    <option value="w trakcie sprawdzenia">w trakcie sprawdzenia</option>
+    <option value="zaakceptowany">zaakceptowany</option>
+    <option value="odrzucony">odrzucony</option>
+</select>
+<button id="apply-filter">Zastosuj</button>
+<button id="clear-filter">Resetuj</button>
+<button onclick="exportTable()">Export to Excel</button>
+
+<table id="invoices-table">
+    <thead>
+        <tr>
+            <th>Driver ID</th>
+            <th>Numer Faktury</th>
+            <th>Data zakupu</th>
+            <th>Typ</th>
+            <th>Numer rejestracyjny auta</th>
+            <th>NIP Sprzedawcy</th>
+            <th>Litry</th>
+            <th>Rodzaj paliwa</th>
+            <th>Kwota brutto</th>
+            <th>Stawka VAT</th>
+            <th>Kwota Netto</th>
+            <th>Kwota VAT</th>
+            <th>VAT Do zwrotu</th>
+            <th>Status</th>
+            <th>Change Status</th>
+            <th>Plik</th>
+        </tr>
+    </thead>
+    <tbody>
+        <!-- Invoices will be inserted here -->
+    </tbody>
+</table>
+
+<script>
+    document.addEventListener('DOMContentLoaded', (event) => {
+    const monthFilter = document.getElementById('month-filter');
+    const typeFilter = document.getElementById('type-filter');
+    const statusFilter = document.getElementById('status-filter');
+    const tableBody = document.getElementById('invoices-table').getElementsByTagName('tbody')[0];
+    const applyFilterButton = document.getElementById('apply-filter');
+    const clearFilterButton = document.getElementById('clear-filter');
+
+clearFilterButton.addEventListener('click', (event) => {
+    monthFilter.value = '';
+    typeFilter.value = '';
+    statusFilter.value = '';
+    updateTable(invoicesData, '', '', '');
+});
+
+    const uniqueTypes = new Set();
+    let invoicesData = [];
+
+    // Сначала загрузим все данные
+    realtimeDb.ref('drivers').on('value', (snapshot) => {
+        const drivers = snapshot.val();
+
+        for (let driverId in drivers) {
+            const driver = drivers[driverId];
+            if (driver.invoices) {
+                for (let invoiceId in driver.invoices) {
+                    const invoice = driver.invoices[invoiceId];
+
+                    // Преобразование даты в нужный формат
+                    const date = new Date(invoice.purchaseDate);
+                    const invoiceMonth = ("0" + (date.getMonth() + 1)).slice(-2);
+
+                    // Добавление месяца в данные счета
+                    invoice.invoiceMonth = invoiceMonth;
+                    invoice.driverId = driverId;
+                    invoice.invoiceId = invoiceId;
+                    
+                    invoicesData.push(invoice);
+                    uniqueTypes.add(invoice.type);
+                }
+            }
+        }
+
+        // После загрузки всех данных, наполняем фильтр типами
+        if (typeFilter.childElementCount === 0) {
+            for (let type of uniqueTypes) {
+                const option = document.createElement('option');
+                option.value = type;
+                option.innerText = type;
+                typeFilter.appendChild(option);
+            }
+        }
+
+        // Заполняем таблицу сразу после загрузки всех данных
+        updateTable(invoicesData, '', '', '');
+    });
+
+    applyFilterButton.addEventListener('click', (event) => {
+        const selectedMonth = monthFilter.value;
+        const selectedType = typeFilter.value;
+        const selectedStatus = statusFilter.value;
+        updateTable(invoicesData, selectedMonth, selectedType, selectedStatus);
+    });
+
+    function updateTable(invoices, selectedMonth, selectedType, selectedStatus) {
+        tableBody.innerHTML = ''; // Очистим таблицу перед обновлением
+
+        // Применим фильтры к данным счетов
+        const filteredInvoices = invoices.filter(invoice => {
+            return (selectedMonth === '' || invoice.invoiceMonth === selectedMonth) &&
+                (selectedType === '' || invoice.type === selectedType) &&
+                (selectedStatus === '' || invoice.status === selectedStatus);
+        });
+
+        for (let invoice of filteredInvoices) {
+            const row = tableBody.insertRow();
+            const cellDriverId = row.insertCell();
+            const cellInvoiceNumber = row.insertCell();
+            const cellPurchaseDate = row.insertCell();
+            const cellType = row.insertCell()
+            const cellRegistrationNumber = row.insertCell();
+            const cellNipSeller = row.insertCell();
+            const cellLiters = row.insertCell();
+            const cellFuelType = row.insertCell();
+            const cellGrossAmount = row.insertCell();
+            const cellVatRate = row.insertCell();
+            const cellNetAmount = row.insertCell();
+            const cellVatAmount = row.insertCell();
+            const cellVatReturn = row.insertCell();
+            const cellStatus = row.insertCell();
+            const cellChangeStatus = row.insertCell();
+            const cellFilePreview = row.insertCell();
+
+            if (invoice.fileURL) {
+                cellFilePreview.innerHTML = '<a href="' + invoice.fileURL + '" target="_blank">Zobacz plik</a>';
+            } else {
+                cellFilePreview.innerText = 'Nie ma pliku';
+            }
+
+            cellDriverId.innerText = invoice.driverId;
+            cellInvoiceNumber.innerText = invoice.numerfaktury;
+            cellPurchaseDate.innerText = invoice.purchaseDate;
+            cellType.innerText = invoice.type;
+
+            // Если registrationNumber пуст или не определен, установить его на "Nie dotyczy"
+            cellRegistrationNumber.innerText = invoice.registrationNumber ? invoice.registrationNumber : "Nie dotyczy";
+
+            cellNipSeller.innerText = invoice.nipseller;
+            cellLiters.innerText = invoice.liters;
+            cellFuelType.innerText = invoice.fuelType;
+            cellGrossAmount.innerText = invoice.grossAmount;
+            cellVatRate.innerText = invoice.vatRate;
+            cellNetAmount.innerText = invoice.netAmount;
+            cellVatAmount.innerText = invoice.vatAmount;
+            cellVatReturn.innerText = invoice.vatReturn;
+            cellStatus.innerText = invoice.status;
+
+            const select = document.createElement('select');
+            select.innerHTML = `
+                <option value="w trakcie sprawdzenia">w trakcie sprawdzenia</option>
+                <option value="zaakceptowany">zaakceptowany</option>
+                <option value="odrzucony">odrzucony</option>
+            `;
+            select.value = invoice.status;
+            select.addEventListener('change', (event) => {
+                realtimeDb.ref('drivers/' + invoice.driverId + '/invoices/' + invoice.invoiceId).update({
+                    status: event.target.value
+                });
+            });
+            cellChangeStatus.appendChild(select);
+        }
+    }
+});
+
+
+    // Экспорт в файл
+    function exportTable() {
+        let csv = [];
+        let rows = document.querySelectorAll("#invoices-table tr");
+
+        for (let i = 0; i < rows.length; i++) {
+            let row = [], cols = rows[i].querySelectorAll("td, th");
+
+            for (let j = 0; j < cols.length; j++) {
+                // Обработка запятых и двойных кавычек в данных
+                let data = cols[j].innerText.replace(/"/g, '""');
+                data = data.replace(/,/g, '');
+                row.push('"' + data + '"');
+            }
+
+            csv.push(row.join(","));
+        }
+
+        // Создание ссылки для загрузки файла
+        let csvFile = new Blob([csv.join("\n")], { type: "text/csv" });
+        let downloadLink = document.createElement("a");
+
+        // Установка имени файла
+        downloadLink.download = 'invoices.csv';
+
+        // Создание скрытой ссылки
+        downloadLink.href = window.URL.createObjectURL(csvFile);
+        downloadLink.style.display = "none";
+
+        document.body.appendChild(downloadLink);
+
+        // Запуск функции загрузки
+        downloadLink.click();
+    }
+
+
+
+</script>

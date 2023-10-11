@@ -1,0 +1,8 @@
+{
+  "functions": {
+    "source": "functions",
+    "predeploy": [],
+    "runtime": "nodejs18",
+    "memory": "2GiB" 
+  }
+}

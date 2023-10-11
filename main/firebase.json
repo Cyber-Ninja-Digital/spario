@@ -1,0 +1,17 @@
+{
+  "functions": [
+    {
+      "source": "functions",
+      "predeploy": [],
+      "runtime": "nodejs18",
+      "memory": "2GiB",
+      "codebase": "default",
+      "ignore": [
+        "node_modules",
+        ".git",
+        "firebase-debug.log",
+        "firebase-debug.*.log"
+      ]
+    }
+  ]
+}

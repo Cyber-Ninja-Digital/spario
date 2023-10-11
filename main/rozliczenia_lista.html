@@ -1,0 +1,503 @@
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.0/papaparse.min.js"></script>
+<script src="https://www.gstatic.com/firebasejs/8.6.1/firebase-app.js"></script>
+<script src="https://www.gstatic.com/firebasejs/8.6.1/firebase-firestore.js"></script>
+<script src="https://www.gstatic.com/firebasejs/8.6.1/firebase-auth.js"></script>
+<script src="https://www.gstatic.com/firebasejs/8.6.1/firebase-database.js"></script>
+<script src="https://www.gstatic.com/firebasejs/8.6.1/firebase-storage.js"></script>
+<script>
+  const firebaseConfig = {
+    apiKey: "AIzaSyDVz0ho0nQb7Sh9o_0wFLZfVJM7aeGYgb0",
+        authDomain: "ccmcolorpartner.firebaseapp.com",
+        databaseURL: "https://ccmcolorpartner-default-rtdb.europe-west1.firebasedatabase.app",
+        projectId: "ccmcolorpartner",
+        storageBucket: "ccmcolorpartner.appspot.com",
+        messagingSenderId: "417966588632",
+        appId: "1:417966588632:web:bf85b1ff7307bb86de8dad",
+        measurementId: "G-WQP6RE6CQ3"
+  };
+  firebase.initializeApp(firebaseConfig);
+  const auth = firebase.auth();
+  const db = firebase.firestore();
+  const firestoreDb = db;
+  const realtimeDb = firebase.database();
+  auth.setPersistence(firebase.auth.Auth.Persistence.LOCAL);
+  function loginUser(email, password) {
+    auth.signInWithEmailAndPassword(email, password)
+      .then((userCredential) => {
+      })
+      .catch((error) => {
+        console.error("Ошибка входа:", error);
+        console.error("Error code:", error.code);
+        console.error("Error message:", error.message);
+      });
+  }
+  auth.onAuthStateChanged(user => {
+    if (user) {
+    } else {
+    }
+  });
+  window.addEventListener('DOMContentLoaded', (event) => {
+    const loginForm = document.getElementById('login-form');
+    if (loginForm) {
+      loginForm.addEventListener('submit', (e) => {
+        e.preventDefault();
+        const email = document.getElementById('email-input').value;
+        const password = document.getElementById('password-input').value;
+        loginUser(email, password);
+      });
+    }
+    const logoutButton = document.getElementById("logout-button");
+    if (logoutButton) {
+      logoutButton.onclick = function () {
+        auth.signOut().then(() => {
+        }).catch((error) => {
+          console.error("Error signing out:", error);
+        });
+      };
+    }
+  });
+  function formatNumber(number, digits = 2) {
+    if (typeof number === "number") {
+      return parseFloat(number.toFixed(digits));
+    } else {
+      return number;  // если это не число, просто вернуть исходное значение
+    }
+  }
+</script>
+<select id="week-selector">
+  <!-- Опции будут добавлены с помощью JavaScript -->
+</select>
+<input type="text" id="driver-filter" placeholder="Enter driver name">
+<button id="export-button" type="button">Eksportuj do CSV</button>
+<select id="city-selector">
+  <!-- Опции будут добавлены с помощью JavaScript -->
+</select>
+<table id="drivers-data">
+  <thead>
+    <tr>
+      <th>Kierowca</th>
+      <th>Tydzień</th>
+      <th>Miasto</th>
+      <th>Aplikację</th>
+      <th>Kursy</th>
+      <th>Przychod Dodatkowy</th>
+      <th>Prowizja</th>
+      <th>Gotowka</th>
+      <th>VAT Przejazdy</th>
+      <th>Zwrot VAT</th>
+      <th>Partner</th>
+      <th>ZUS</th>
+      <th>Inne</th>
+      <th>Wynajem</th>
+      <th>Zwrot kosztów</th>
+      <th>Podatek do zapłaty</th>
+      <th>Na konto</th>
+      <th>Operację</th>
+      <th>Saldo</th>
+      <button id="save-button" type="button">Zapisz</button>
+    </tr>
+  </thead>
+  <tbody id="drivers-data-body">
+    <!-- Сюда будут добавляться строки с данными водителей -->
+  </tbody>
+</table>
+<script>
+  function formatNumber(e) {
+    return void 0 !== e ? parseFloat(e).toFixed(2) : 0;
+}
+function getFirstWeek() {
+    return new Promise((e, t) => {
+        let r = document.getElementById("week-selector");
+        realtimeDb.ref("drivers").on("value", (a) => {
+            let l = a.val(),
+                d = new Set(),
+                n;
+            for (let o in l) {
+                let s = l[o];
+                for (let i in s.weeks) d.add(i), n || (n = i);
+            }
+            (r.innerHTML = ""),
+                d.forEach((e) => {
+                    let t = document.createElement("option");
+                    t.value = e;
+                    let a, d;
+                    for (let n in l) {
+                        let o = l[n];
+                        if (o.weeks && o.weeks[e] && o.weeks[e].summary && ((a = o.weeks[e].summary.startDate), (d = o.weeks[e].summary.endDate), a && d)) break;
+                    }
+                    (t.textContent = `Tydzień ${e} (${a} - ${d})`), r.appendChild(t);
+                }),
+                n ? e(n) : t("No weeks found.");
+        });
+    });
+}
+function displayAllDrivers() {
+    document.getElementById("week-selector").addEventListener("change", (e) => {
+        displayDriversForWeek(e.target.value);
+    });
+}
+function displayDriversForWeek(e) {
+    let t = document.getElementById("drivers-data-body"),
+        r = realtimeDb.ref("drivers");
+    r.off(),
+        r.on("value", (r) => {
+            let a = r.val(),
+                l = [],
+                d = document.getElementById("driver-filter").value;
+            for (let n in a) {
+                if (d && !n.includes(d)) continue;
+                let o = a[n];
+                if (o.weeks && o.weeks[e]) {
+                    let s = o.weeks[e];
+                    if (s.summary) {
+                        let i = document.createElement("tr"),
+                            m = document.createElement("button");
+                        (m.id = `save-button-${n}`),
+                            (m.innerText = "Zapisz"),
+                            (m.style.display = "none"),
+                            (i.innerHTML = `
+  <td>${n}</td>
+  <td>${e}</td>
+  <td>${s.summary.city || "N/A"}</td>
+  <td>${s.summary.service ? s.summary.service : "0"}</td>
+  <td>${formatNumber(s.summary.kursy)}</td>
+  <td>${formatNumber(s.summary.przychod_dodatkowy)}</td>
+  <td>${formatNumber(s.summary.commission)}</td>
+  <td>${formatNumber(s.summary.gotowka)}</td>
+  <td>${formatNumber(s.summary.vat_przejazdy + s.summary.vat_dodatkowy)}</td>
+  <td>${formatNumber(s.summary.vat_bonus)}</td>
+  <td><input id="partner-value-${n}" value="${formatNumber(s.summary.partner)}" disabled></td>
+  <td>${formatNumber(s.summary.zus)}</td>
+  <td>${formatNumber(s.summary.inne)}</td>
+  <td>${formatNumber(s.summary.wynajem)}</td>
+  <td>${formatNumber(s.summary.zwrot_kosztow)}</td>
+  <td>${formatNumber(s.summary.podatek_do_zaplaty)}</td>
+  <td>${formatNumber(s.summary.total)}</td>
+  <td>
+    <select id="operation-select-${n}">
+      <option value="Rozliczony">Rozliczony</option>
+      <option value="Przelew wysłany">Przelew wysłany</option>
+      <option value="Przyjęta got\xf3wka">Przyjęta got\xf3wka</option>
+      <option value="Edytuj">Edytuj</option>
+    </select>
+  </td>
+  <td>${formatNumber(o.balance)}</td>
+
+  `),
+                            t.appendChild(i);
+                        let u = document.getElementById(`operation-select-${n}`),
+                            y = document.getElementById(`partner-value-${n}`);
+                        if (
+                            (console.log("Operation select element: ", u),
+                            console.log("Partner input element: ", y),
+                            i.querySelector("td:last-child").appendChild(m),
+                            l.push({ element: i, appElements: [], total: s.summary.total, id: n, driverData: o }),
+                            s.apps)
+                        )
+                            for (let p in s.apps) {
+                                let c = s.apps[p],
+                                    f = document.createElement("tr");
+                                (f.innerHTML = `
+                <td></td>
+                <td></td>
+                <td></td>
+                <td>${p}</td>
+                <td>${formatNumber(c.kursy)}</td>
+                <td>${formatNumber(c.przychod_dodatkowy)}</td>
+                <td>${formatNumber(c.commission)}</td>
+                <td>${formatNumber(c.gotowka)}</td>
+                <td>${formatNumber(c.vat_przejazdy + c.vat_dodatkowy)}</td>
+                <td>${formatNumber(c.vat_bonus)}</td>
+                <td>${formatNumber(c.partner)}</td>
+                <td>${formatNumber(c.zus)}</td>
+                <td>${formatNumber(c.inne)}</td>
+                <td>${formatNumber(c.wynajem)}</td>
+                <td>${formatNumber(c.zwrot_kosztow)}</td>
+                <td>${formatNumber(c.podatek_do_zaplaty)}</td>
+                <td>${formatNumber(c.total)}</td>
+                <td>${formatNumber(c.balance)}</td>
+                                <td></td>
+
+              `),
+                                    (f.style.display = "none"),
+                                    i.addEventListener("click", () => {
+                                        "none" === f.style.display ? (f.style.display = "table-row") : (f.style.display = "none");
+                                    }),
+                                    l[l.length - 1].appElements.push(f);
+                            }
+                    }
+                }
+            }
+            (t.innerHTML = ""),
+                l
+                    .sort((e, t) => t.total - e.total)
+                    .forEach((e) => {
+                        t.appendChild(e.element),
+                            e.appElements.forEach((e) => {
+                                t.appendChild(e);
+                            });
+                    });
+        }),
+        t.addEventListener("change", (t) => {
+            let r = t.target,
+                a = r.id.split("-").pop();
+            if ("SELECT" === r.tagName) {
+                let l = r.value;
+                console.log("Selected operation: ", l);
+                let d = {};
+                if ("Przelew wysłany" === l) (d.balance = 0), realtimeDb.ref(`drivers/${a}`).update({ balance: d.balance });
+                else if ("Przyjęta got\xf3wka" === l) {
+                    let n = prompt("Wprowadź kwotę przyjętej got\xf3wki");
+                    if (n && !isNaN(n))
+                        realtimeDb
+                            .ref(`drivers/${a}/balance`)
+                            .once("value")
+                            .then((e) => {
+                                let t = e.val();
+                                (d.balance = t - Number(n)), realtimeDb.ref(`drivers/${a}`).update({ balance: d.balance });
+                            });
+                    else {
+                        alert("Proszę wprowadzić prawidłową liczbę");
+                        return;
+                    }
+                } else "Edytuj" === l && (console.log("Entered 'Edytuj' case"), (document.getElementById(`save-button-${a}`).style.display = "block"), (document.getElementById(`partner-value-${a}`).disabled = !1));
+                (d.operation = l), realtimeDb.ref(`drivers/${a}/weeks/${e}/summary`).update({ status: d.operation });
+            } else if ("INPUT" === r.tagName) {
+                let o = Number(r.value),
+                    s;
+                realtimeDb
+                    .ref(`drivers/${a}`)
+                    .once("value")
+                    .then((t) => {
+                        let r = t.val();
+                        s = r.weeks[e].summary.partner;
+                        let l = {};
+                        l.weeks = { ...r.weeks };
+                        let d = l.weeks[e].summary.partner,
+                            n = (r.balance || 0) + s - o;
+                        (l.weeks[e].summary.partner = o),
+                            (l.weeks[e].summary.total = l.weeks[e].summary.total + d - o),
+                            (l.balance = n),
+                            realtimeDb.ref(`drivers/${a}/weeks/${e}/summary`).update(l.weeks[e].summary),
+                            realtimeDb.ref(`drivers/${a}`).update(l);
+                    });
+            }
+        }),
+        t.addEventListener("click", (t) => {
+            let r = t.target;
+            if ("BUTTON" !== r.tagName) return;
+            let a = r.id.split("-").pop();
+            t.preventDefault(), console.log("Save button clicked");
+            let l = Number(document.getElementById(`partner-value-${a}`).value);
+            realtimeDb
+                .ref(`drivers/${a}`)
+                .once("value")
+                .then((t) => {
+                    let d = t.val();
+                    (d.weeks[e].summary.partner = l),
+                        (d.weeks[e].summary.total = d.weeks[e].summary.total - oldPartnerValue + l),
+                        realtimeDb.ref(`drivers/${a}`).update(d),
+                        realtimeDb.ref(`drivers/${a}/weeks/${e}/summary`).update({ partner: l }),
+                        (r.disabled = !0);
+                });
+            let d = { ...driver };
+            (d.weeks[e].summary.partner = l),
+                (d.weeks[e].summary.total = d.weeks[e].summary.total - oldPartnerValue + l),
+                realtimeDb.ref(`drivers/${a}`).update(d),
+                realtimeDb.ref(`drivers/${a}/weeks/${e}/summary`).update({ partner: l }),
+                (r.disabled = !0);
+        });
+}
+function exportTableToCSV(e) {
+    for (var t = [], r = document.querySelectorAll("#drivers-data tr"), a = 0; a < r.length; a++) {
+        for (var l = [], d = r[a].querySelectorAll("td, th"), n = 0; n < d.length; n++) {
+            let o = d[n].innerText;
+            3 === n && (o = o.replace(/,/g, " ")), l.push(o);
+        }
+        t.push(l.join(","));
+    }
+    var s = new Blob([t.join("\n")], { type: "text/csv" }),
+        i = document.createElement("a");
+    (i.download = e), (i.href = window.URL.createObjectURL(s)), (i.style.display = "none"), document.body.appendChild(i), i.click();
+}
+function displayDriversForCity(e) {
+    let t = document.getElementById("drivers-data-body"),
+        r = realtimeDb.ref("drivers");
+    r.off(),
+        r.on("value", (r) => {
+            let a = r.val();
+            for (let l in ((t.innerHTML = ""), a)) {
+                let d = a[l];
+                for (let n in d.weeks) {
+                    let o = d.weeks[n];
+                    if (o.summary && o.summary.city === e) {
+                        let s = createRowForDriver(d, n, o);
+                        t.appendChild(s);
+                    }
+                }
+            }
+        });
+}
+function displayAppData(e, t) {
+    if (e)
+        for (let [r, a] of e ? Object.entries(e) : []) {
+            let l = `${t}-${r}`,
+                d = document.getElementById(l);
+            d && (d.textContent = a);
+        }
+}
+function fillWeeksSelector(e) {
+    let t = document.getElementById("week-selector"),
+        r = realtimeDb.ref(`drivers/${e}/weeks`);
+    return new Promise((e, a) => {
+        r.on(
+            "value",
+            (r) => {
+                let a = r.val(),
+                    l = Object.entries(a).sort(([e, t], [r, a]) => {
+                        let l = Number(e.split("-")[0]),
+                            d = Number(r.split("-")[0]);
+                        return d - l;
+                    });
+                for (let [d, n] of ((t.innerHTML = ""), l)) {
+                    let o = document.createElement("option");
+                    o.value = d;
+                    let s = d.split("-")[0],
+                        i = n.summary?.startDate || "Brak",
+                        m = n.summary?.endDate || "Brak";
+                    (o.textContent = `Tydzień ${s} (${i} - ${m})`), t.appendChild(o);
+                }
+                (t.value = l[0][0]), e(l[0][0]);
+            },
+            a
+        );
+    });
+}
+document.getElementById("driver-filter").addEventListener("input", function () {
+    displayDriversForWeek(document.getElementById("week-selector").value);
+}),
+    document.addEventListener("DOMContentLoaded", function () {
+        getFirstWeek()
+            .then((e) => {
+                displayDriversForWeek(e);
+            })
+            .catch((e) => console.error(e));
+    }),
+    document.addEventListener("DOMContentLoaded", function () {
+        getFirstWeek()
+            .then((e) => {
+                displayAllDrivers();
+            })
+            .catch((e) => console.error(e));
+    }),
+    document.querySelector("#export-button").addEventListener("click", function () {
+        exportTableToCSV("drivers_data.csv");
+    }),
+    document.querySelectorAll("#drivers-data th").forEach((e) => {
+        e.addEventListener("click", () => {
+            let t = document.querySelector("#drivers-data").querySelector("tbody"),
+                r = Array.prototype.indexOf.call(e.parentNode.children, e),
+                a = e.getAttribute("data-sort") || "asc",
+                l = Array.from(t.querySelectorAll("tr")).sort((e, t) => {
+                    let l = e.children[r].innerText,
+                        d = t.children[r].innerText;
+                    switch (a) {
+                        case "asc":
+                            return l > d ? 1 : -1;
+                        case "desc":
+                            return l < d ? 1 : -1;
+                        default:
+                            return 0;
+                    }
+                });
+            "asc" === a ? e.setAttribute("data-sort", "desc") : e.setAttribute("data-sort", "asc"),
+                l.forEach((e) => {
+                    t.appendChild(e);
+                });
+        });
+    }),
+    realtimeDb.ref("drivers").on("value", (e) => {
+        let t = e.val(),
+            r = document.getElementById("city-selector"),
+            a = new Set();
+        for (let l in t) {
+            let d = t[l];
+            for (let n in d.weeks) {
+                let o = d.weeks[n];
+                o.summary && o.summary.city && a.add(o.summary.city);
+            }
+        }
+        (r.innerHTML = ""),
+            a.forEach((e) => {
+                let t = document.createElement("option");
+                (t.value = e), (t.textContent = e), r.appendChild(t);
+            });
+    }),
+    document.getElementById("city-selector").addEventListener("change", (e) => {
+        displayDriversForCity(e.target.value);
+    });
+
+</script>
+<style>
+  body {
+    font-family: 'Poppins', sans-serif;
+    font-weight: 400;
+  }
+  #week-selector {
+    margin: 20px 0;
+    padding: 10px;
+    border-radius: 20px;
+  }
+  #drivers-data {
+    width: 100%;
+    border-collapse: separate;
+    border-spacing: 0;
+  }
+  #drivers-data thead {
+    background-color: #64cc98;
+    color: #121212;
+    font-weight: 400;
+  }
+  #drivers-data thead th {
+    padding: 10px;
+    text-align: left;
+    border: none;
+    font-weight: 400;
+  }
+  #drivers-data thead th:first-child {
+    border-top-left-radius: 10px;
+  }
+  #drivers-data thead th:last-child {
+    border-top-right-radius: 10px;
+  }
+  #drivers-data tbody td {
+    padding: 10px;
+    border: 1px solid #ddd;
+  }
+  #drivers-data tbody tr:last-child td:first-child {
+    border-bottom-left-radius: 10px;
+  }
+  #drivers-data tbody tr:last-child td:last-child {
+    border-bottom-right-radius: 10px;
+  }
+  #drivers-data tbody tr:nth-child(even) {
+    background-color: #f2f2f2;
+  }
+  #drivers-data tbody tr:hover {
+    background-color: #ddd;
+  }
+  #drivers-data tbody .action-button {
+    font-weight: 400;
+    color: #fff;
+    background-color: #64cc98;
+    border: none;
+    padding: 5px 20px;
+    border-radius: 20px;
+    cursor: pointer;
+    text-decoration: none;
+  }
+  #drivers-data tbody .action-button:hover {
+    background-color: #53b384;
+  }
+</style>

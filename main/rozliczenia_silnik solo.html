@@ -1,0 +1,561 @@
+<form id="upload-form">
+  <label for="uber-file">Załaduj Uber CSV:</label>
+  <input type="file" id="uber-file" data-service="uber" accept=".csv" />
+  <label for="bolt-file">Załaduj Bolt CSV:</label>
+  <input type="file" id="bolt-file" data-service="bolt" accept=".csv" />
+  <label for="freenow-file">Załaduj Freenow CSV:</label>
+  <input type="file" id="freenow-file" data-service="freenow" accept=".csv" />
+  <label for="city">City:</label>
+  <select id="city" name="city">
+    <option value="warsaw">Warssaw</option>
+    <option value="krakow">Krakow</option>
+    <option value="wroclaw">Wroclaw</option>
+    <option value="poznan">Poznan</option>
+    <option value="gdansk">Gdansk</option>
+    <option value="szczecin">Szczecin</option>
+    <option value="lodz">Lodz</option>
+    <option value="lublin">Lublin</option>
+    <option value="katowice">Katowice</option>
+    <option value="bialystok">Bialystok</option>
+    <option value="gdynia">Gdynia</option>
+    <option value="Rzeszów">Rzeszów</option>
+    <option value="Kalisz">Kalisz</option>
+    <option value="Kielce">Kielce</option>
+    <option value="Sopot">Sopot</option>
+    <option value="Trójmiasto">Trójmiasto</option>
+    <option value="Opole">Opole</option>
+    <option value="Gorzow_Wielkopolski">Gorzów Wielkopolski</option>
+    <option value="Białystok">Białystok</option>
+    <option value="Bielsko_Biała">Bielsko Biała</option>
+    <option value="trojmiasto">Trójmiasto</option>
+    <option value="Olsztyn">Olsztyn</option>
+    <option value="Lublin">Lublin</option>
+    <option value="Słupsk">Słupsk</option>
+
+  </select>
+  <label for="start-date">Początek okresu rozliczeniowego:</label>
+  <input type="date" id="start-date" name="start-date" />
+  <label for="end-date">Koniec okresu rozliczeniowego:</label>
+  <input type="date" id="end-date" name="end-date" />
+  <label for="week">Tydzień:</label>
+  <input type="text" id="week" name="week" readonly />
+  <button type="submit">Rozlicz</button>
+</form>
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.0/papaparse.min.js"></script>
+<script src="https://www.gstatic.com/firebasejs/8.6.1/firebase-app.js"></script>
+<script src="https://www.gstatic.com/firebasejs/8.6.1/firebase-firestore.js"></script>
+<script src="https://www.gstatic.com/firebasejs/8.6.1/firebase-auth.js"></script>
+<script src="https://www.gstatic.com/firebasejs/8.6.1/firebase-database.js"></script>
+<script src="https://www.gstatic.com/firebasejs/8.6.1/firebase-storage.js"></script>
+
+<script>
+  const firebaseConfig = {
+    apiKey: "AIzaSyDVz0ho0nQb7Sh9o_0wFLZfVJM7aeGYgb0",
+    authDomain: "ccmcolorpartner.firebaseapp.com",
+    databaseURL: "https://ccmcolorpartner-default-rtdb.europe-west1.firebasedatabase.app",
+    projectId: "ccmcolorpartner",
+    storageBucket: "ccmcolorpartner.appspot.com",
+    messagingSenderId: "417966588632",
+    appId: "1:417966588632:web:bf85b1ff7307bb86de8dad",
+    measurementId: "G-WQP6RE6CQ3"
+  };
+
+  firebase.initializeApp(firebaseConfig);
+  console.log(firebaseConfig);
+
+  const auth = firebase.auth();
+  const db = firebase.firestore();
+  const firestoreDb = db; // используйте уже созданный экземпляр
+  const realtimeDb = firebase.database();
+
+  auth.setPersistence(firebase.auth.Auth.Persistence.LOCAL);
+
+  function loginUser(email, password) {
+    auth.signInWithEmailAndPassword(email, password)
+      .then((userCredential) => {
+        console.log("Пользователь вошел в систему:", userCredential.user);
+        console.log("User UID:", userCredential.user.uid);
+      })
+      .catch((error) => {
+        console.error("Ошибка входа:", error);
+        console.error("Error code:", error.code);
+        console.error("Error message:", error.message);
+      });
+  }
+
+
+  auth.onAuthStateChanged(user => {
+    if (user) {
+      console.log('User signed in:', user);
+    } else {
+      console.log('Пользователь вышел');
+    }
+  });
+
+  window.addEventListener('DOMContentLoaded', (event) => {
+    const loginForm = document.getElementById('login-form');
+    if (loginForm) {
+      loginForm.addEventListener('submit', (e) => {
+        e.preventDefault();
+        const email = document.getElementById('email-input').value;
+        const password = document.getElementById('password-input').value;
+        console.log('Email:', email);
+        console.log('Password:', password);
+        loginUser(email, password);
+      });
+    }
+
+    const logoutButton = document.getElementById("logout-button");
+    if (logoutButton) {
+      logoutButton.onclick = function () {
+        auth.signOut().then(() => {
+          console.log("User signed out successfully.");
+        }).catch((error) => {
+          console.error("Error signing out:", error);
+        });
+      };
+    }
+  });
+  function formatNumber(number, digits = 2) {
+    if (typeof number === "number") {
+      return parseFloat(number.toFixed(digits));
+    } else {
+      return number;  // если это не число, просто вернуть исходное значение
+    }
+  }
+</script>
+<script>
+
+  let combinedDataByDriver = {},
+    e = { uber: [], bolt: [], freenow: [] },
+    t = [];
+  function handleFileUploadAndCalculation(a) {
+    let o = a.target.getAttribute("data-service");
+    a.preventDefault();
+    let i = $(a.target),
+      s = o,
+      l = i.find('input[name="week"]').val();
+    if (!l || isNaN(l)) {
+      alert("VALID FILE OK");
+      return;
+    }
+    if (((r = parseInt(l)), !a.target.files || 0 === a.target.files.length)) return;
+    let n = a.target.files[0];
+    if (!n || !n.name.toLowerCase().endsWith(".csv")) {
+      alert("Invalid file format. Please upload a CSV file.");
+      return;
+    }
+    let d = new FileReader();
+    (d.onload = function (a) {
+      let o = a.target.result,
+        i;
+      if (s && "bolt" === s.toLowerCase()) (i = processBoltData(o, r)), mergeDriverData(s, i);
+      else if (s && "uber" === s.toLowerCase()) (i = processUberData(o, r)), mergeDriverData(s, i);
+      else {
+        if (!s || "freenow" !== s.toLowerCase()) return;
+        (i = processFreenowData(o, r)), mergeDriverData(s, i);
+      }
+      (driverSummary[s] = i), mergeDriverData(s, i);
+    }),
+      d.readAsText(n);
+  }
+  async function readCSVFile(a) {
+    return new Promise((o, i) => {
+      let s = new FileReader();
+      (s.onload = (a) => {
+        o(a.target.result);
+      }),
+        (s.onerror = (a) => {
+          i(a);
+        }),
+        s.readAsText(a);
+    });
+  }
+  function processAllFiles(a, o, i, s) {
+    let l = processUberData(a, s),
+      n = processBoltData(o, s),
+      d = processFreenowData(i, s);
+    Object.assign(combinedDataByDriver, l, n, d);
+  }
+  function replacePolishChars(a) {
+    let o = { ą: "a", ć: "c", ę: "e", ł: "l", ń: "n", ó: "o", ś: "s", ź: "z", ż: "z", Ą: "A", Ć: "C", Ę: "E", Ł: "L", Ń: "N", Ó: "O", Ś: "S", Ź: "Z", Ż: "Z" };
+    return a.replace(/[ąćęłńóśźżĄĆĘŁŃÓŚŹŻ]/g, (a) => o[a]);
+  }
+  function processBoltData(a, o) {
+    return processData(
+      "bolt",
+      a,
+      updateBoltDriverData,
+      (a) => replacePolishChars(a.Kierowca),
+      o,
+      (a) => !Object.values(a).some((a) => "Wszyscy kierowcy" === a)
+    );
+  }
+  function processUberData(a, o) {
+    return processData(
+      "uber",
+      a,
+      updateUberDriverData,
+      (a) => `${replacePolishChars(a["Imię kierowcy"].split(" ")[0])} ${replacePolishChars(a["Nazwisko kierowcy"].split(" ")[0].split("-")[0])}`, // добавлено .split("-")[0]
+      o
+    );
+  }
+
+  function processFreenowData(a, o) {
+    return processData("freenow", a, updateFreenowDriverData, (a) => replacePolishChars(a.Driver), o);
+  }
+  function processData(a, o, i, s, l, n) {
+    let d = Papa.parse(o, { header: !0, skipEmptyLines: !0 }),
+      p = {};
+    let headers = d.meta.fields;
+    console.log("Headers from CSV:", headers);
+    for (let c of d.data) {
+      if (n && !n(c)) continue;
+      let u = "function" == typeof s ? s(c) : c[s];
+      if (!u) break;
+      let y = capitalizeWords(u);
+      p[y] || (p[y] = { driver_id: y, week: l, kursy: 0, przychod_dodatkowy: 0, commission: 0, gotowka: 0, tips: 0, vat_przejazdy: 0, vat_dodatkowy: 0, vat_bonus: 0, partner: 0, zus: 0, wynajem: 0, total: 0 }), i(p[y], c);
+    }
+  }
+  function capitalizeWords(a) {
+    return a
+      .toLowerCase()
+      .split(" ")
+      .map((a) => a.charAt(0).toUpperCase() + a.slice(1))
+      .join(" ");
+  }
+  function parseFloatOrDefault(a) {
+    const number = a ? parseFloat(a.replace(",", ".")) : 0;
+    return isNaN(number) ? 0 : number;
+  }
+
+  function updateBoltDriverData(a, o) {
+    let i = parseFloatOrDefault(o["Wartość brutto"]);
+    i &&
+      ((a.kursy += i),
+        (a.przychod_dodatkowy +=
+          parseFloatOrDefault(o["Opłata za anulowanie"]) + parseFloatOrDefault(o.Zwroty) + parseFloatOrDefault(o.Rekompensaty) + parseFloatOrDefault(o["Opłata drogowa"]) + parseFloatOrDefault(o.Bonus) + +parseFloatOrDefault(o.Napiwek)),
+        (a.commission += parseFloatOrDefault(o["Opłata Bolt"])),
+        (a.gotowka += parseFloatOrDefault(o["Przejazdy got\xf3wkowe (przyjęta got\xf3wka)"])),
+        (a.vat_przejazdy = -(0.08 * a.kursy)),
+        (a.vat_dodatkowy = -(0.23 * a.przychod_dodatkowy)),
+        (a.total = a.kursy + a.przychod_dodatkowy + a.commission + a.gotowka + a.vat_przejazdy + a.vat_dodatkowy),
+        mergeDriverData("bolt", [a]),
+        saveDataToFirebase(a.driver_id, a.week, "bolt", a));
+  }
+  function updateUberDriverData(a, o) {
+    console.log("Received data:", o);
+
+    let i = parseFloatOrDefault(o["Wypłacono Ci : Twój przychód"]);
+    console.log("Wypłacono Ci : Twój przychód:", o["Wypłacono Ci : Twój przychód"]);
+
+    if (i) {
+      a.kursy += i;
+
+      // Логируем каждый элемент
+      const keys = [
+        "Wypłacono Ci:Twój przychód:Opłata:Korekta",
+        "Wypłacono Ci:Twój przychód:Opłata:UberX Priority",
+        "Wypłacono Ci:Twój przychód:Opłata:Czas oczekiwania w miejscu odbioru",
+        "Wypłacono Ci:Twój przychód:Promocja:Program Quest",
+        "Wypłacono Ci:Twój przychód:Napiwek",
+        "Wypłacono Ci:Twój przychód:Opłata:Mnożnik",
+        "Wypłacono Ci:Twój przychód:Opłata:Odwołanie"
+      ];
+
+      for (let key of keys) {
+        console.log(key + ":", o[key]);
+        a.przychod_dodatkowy += parseFloatOrDefault(o[key]);
+      }
+
+      a.commission = 0; // Uber commission, если у вас есть соответствующее поле в данных, замените это значение
+
+      console.log("Wypłacono Ci : Bilans przejazdu : Wypłaty : Odebrana gotówka:", o["Wypłacono Ci : Bilans przejazdu : Wypłaty : Odebrana gotówka"]);
+      console.log("Wypłacono Ci:Bilans przejazdu:Zwroty:Opłata lotniskowa:", o["Wypłacono Ci:Bilans przejazdu:Zwroty:Opłata lotniskowa"]);
+      a.gotowka += parseFloatOrDefault(o["Wypłacono Ci : Bilans przejazdu : Wypłaty : Odebrana gotówka"]) +
+        parseFloatOrDefault(o["Wypłacono Ci:Bilans przejazdu:Zwroty:Opłata lotniskowa"]);
+
+      a.vat_przejazdy = -(0.08 * a.kursy);
+      a.vat_dodatkowy = -(0.23 * a.przychod_dodatkowy);
+
+      a.total = a.kursy + a.przychod_dodatkowy + a.commission + a.gotowka + a.vat_przejazdy + a.vat_dodatkowy;
+
+      mergeDriverData("uber", [a]);
+      saveDataToFirebase(a.driver_id, a.week, "uber", a);
+    }
+  }
+
+
+  function updateFreenowDriverData(a, o) {
+    let i = parseFloatOrDefault(o["Completed trips "]);
+    i &&
+      ((a.kursy += i),
+        (a.przychod_dodatkowy +=
+          parseFloatOrDefault(o.Incentives) +
+          parseFloatOrDefault(o.Tolls) +
+          parseFloatOrDefault(o.Cancellations) +
+          parseFloatOrDefault(o["Waiting time"]) +
+          parseFloatOrDefault(o.Tips) +
+          parseFloatOrDefault(o["Airport fee"]) +
+          parseFloatOrDefault(o["Hotel fee"])),
+        (a.commission = -parseFloatOrDefault(o.Commission) + parseFloatOrDefault(o.Others)),
+        (a.gotowka -= parseFloatOrDefault(o["Non-app payments"])),
+        (a.vat_przejazdy = -(0.08 * a.kursy)),
+        (a.vat_dodatkowy = -(0.23 * a.przychod_dodatkowy)),
+        (a.total = a.kursy + a.przychod_dodatkowy + a.commission + a.gotowka + a.vat_przejazdy + a.vat_dodatkowy),
+        mergeDriverData("freenow", [a]),
+        saveDataToFirebase(a.driver_id, a.week, "freenow", a));
+  }
+  function calculateDriverData(a) {
+    let o = { ...a };
+    return (o.vat_przejazdy = 0.08 * a.kursy), (o.vat_dodatkowy = 0.23 * a.przychod_dodatkowy), "Uczeń/Student" == a.workStatus ? ((o.zus = 0), (o.podatek_do_zaplaty = 0)) : "Osoba do 26 roku życia" == a.workStatus && (o.zus = 0), o;
+  }
+  function saveDataToFirebase(a, o, i, s) {
+    realtimeDb.ref(`drivers/${a}/weeks/${o}/apps/${i}/`).update(s);
+  }
+  function mergeDriverData(a, driverData, i, s) {
+    console.log("mergeDriverData function started");
+    let l = [];
+    driverData.forEach((driver) => {
+      console.log(`Processing driver: ${JSON.stringify(driver)}`);
+      let i = driver.driver_id,
+        s = realtimeDb
+          .ref(`drivers/${i}`)
+          .get()
+          .then((s) => {
+
+            console.log("Got driver data from realtimeDb");
+
+            calculateDriverData(s.val());
+            let zusType = s.val().zusType,
+              car = s.val().car;
+            return Promise.all([realtimeDb.ref(`admin/carsrent/${car}`).get(), realtimeDb.ref(`admin/${zusType}`).get()])
+              .then(([carRentData, zusData]) => {
+                console.log("Got carRentData and zusData");
+
+                let rent;
+                if (carRentData.exists() && carRentData.val()) {
+                  rent = parseFloat(carRentData.val().rent);
+                } else {
+                  rent = 0;
+                  if (!car) {
+                    console.log(`Car data not found for driver: ${i}`);
+                  } else {
+                    console.log(`No rent data found for car: ${car}`);
+                  }
+                } let zus = Number(zusData.val());
+                return realtimeDb
+                  .ref("admin/partner")
+                  .get()
+                  .then((partnerData) => {
+                    console.log("Got partnerData");  // Debug log added
+
+                    let partner = Number(partnerData.val());
+                    return realtimeDb
+                      .ref(`drivers/${i}/invoices`)
+                      .get()
+                      .then((invoiceData) => {
+                        let invoices = invoiceData.val(),
+                          vatReturn = 0,
+                          expensesValue = 0,
+                          invoiceValue = 0;
+                        let today = new Date();
+                        let shouldDeductZus = today.getDate() >= 5 && today.getDate() <= 11;
+                        console.log("ZUS value:", zus);
+                        console.log("Should deduct ZUS:", shouldDeductZus);
+                        // Get start and end dates from input fields
+                        let startDate = new Date(document.getElementById("start-date").value),
+                          endDate = new Date(document.getElementById("end-date").value);
+
+                        invoices ? Object.values(invoices).forEach((invoice) => {
+                          let invoiceDate = new Date(invoice.purchaseDate + "T00:00:00");
+                          if (invoice && invoice.status === 'zaakceptowany' && invoiceDate >= startDate && invoiceDate <= endDate) {
+                            if (invoice.type === 'wydatek') {
+                              console.log(`Accepted wydatek: ${JSON.stringify(invoice)}`);  // Debug log added
+                              expensesValue += Number(invoice.grossAmount || 0);
+                            } else if (invoice.type === 'faktura') {
+                              invoiceValue += Number(invoice.grossAmount || 0);
+                              vatReturn += Number(invoice.vatReturn || 0);
+                            }
+                          }
+                        })
+
+                          : ((vatReturn = 0), (costsReturn = 0));
+
+
+                        (combinedDataByDriver[i]
+                          ? (combinedDataByDriver[i].service || (combinedDataByDriver[i].service = []),
+                            combinedDataByDriver[i].service.includes(a) || combinedDataByDriver[i].service.push(a),
+                            Object.keys(driver).forEach((key) => {
+                              -1 === ["driver_id", "week", "service"].indexOf(key) && (combinedDataByDriver[i][key] += driver[key]);
+                            }))
+                          : ((combinedDataByDriver[i] = { driver_id: i, week: driver.week, service: [a], ...driver }),
+                            (combinedDataByDriver[i].kursy = driver.kursy),
+                            (combinedDataByDriver[i].przychod_dodatkowy = driver.przychod_dodatkowy),
+                            (combinedDataByDriver[i].commission = driver.commission),
+                            (combinedDataByDriver[i].gotowka = driver.gotowka),
+                            (combinedDataByDriver[i].vat_przejazdy = driver.vat_przejazdy),
+                            (combinedDataByDriver[i].vat_dodatkowy = driver.vat_dodatkowy),
+                            (combinedDataByDriver[i].vat_bonus = vatReturn),
+                            (combinedDataByDriver[i].partner = partner),
+                            (combinedDataByDriver[i].zus = shouldDeductZus ? zus : 0),
+                            (combinedDataByDriver[i].wynajem = rent),
+                            (combinedDataByDriver[i].inne = expensesValue),
+                            (combinedDataByDriver[i].zwrot_kosztow = invoiceValue),
+                            (combinedDataByDriver[i].total = driver.total + vatReturn - rent - (shouldDeductZus ? zus : 0) - partner - expensesValue)
+                          ),
+                          combinedDataByDriver[i]
+                        );
+                      })
+                      .catch((a) => {
+                        console.error(`Error while getting invoices: ${a}`);
+                        console.log(`Current calculations: Expenses: ${expensesValue}, Invoices: ${invoiceValue}, VAT Return: ${vatReturn}`); // Debug log added
+                      });
+                  })
+                  .catch((a) => {
+                    console.error(`Error while getting partner value: ${a}`);
+                  });
+              })
+              .catch((a) => {
+                console.error(`Error while getting rent per week or zus value: ${a}`);
+              });
+          })
+          .catch((a) => {
+            console.error(`Error while getting driver data: ${a}`);
+          });
+      l.push(s);
+    }),
+      Promise.all(l)
+        .then(() => {
+          console.log("All promises successfully resolved."), saveCombinedDataToFirebase();
+        })
+        .catch((a) => {
+          console.error(`An error occurred: ${a}`);
+        });
+  }
+
+  function saveCombinedDataToFirebase() {
+    let promises = []; // Here we create an empty array to hold our promises
+    let city = document.getElementById('city').value; // Получение выбранного города
+    Object.values(combinedDataByDriver).forEach((a) => {
+      let o = a.driver_id,
+        i = a.week,
+        s = document.getElementById("start-date").value,
+        l = document.getElementById("end-date").value,
+        n = {
+          kursy: a.kursy || 0,
+          przychod_dodatkowy: a.przychod_dodatkowy || 0,
+          tips: a.tips || 0,
+          commission: a.commission || 0,
+          gotowka: a.gotowka || 0,
+          vat_przejazdy: a.vat_przejazdy || 0,
+          vat_dodatkowy: a.vat_dodatkowy || 0,
+          vat_bonus: a.vat_bonus || 0,
+          partner: a.partner || 0,
+          zus: a.zus || 0,
+          inne: a.inne || 0,
+          wynajem: a.wynajem || 0,
+          zwrot_kosztow: a.zwrot_kosztow || 0,
+          total: a.total || 0,
+          service: a.service ? a.service : [],
+          startDate: s,
+          endDate: l,
+          city: city,
+          status: "123",
+        };
+
+      let promise = realtimeDb.ref(`drivers/${o}/weeks/${i}/summary`).update(n)
+        .catch((a) => {
+          console.error(`Error while updating balance for driver ${o}: ${a}`);
+        });
+
+      promises.push(promise); // Push the promise to the array
+    });
+
+    return Promise.all(promises); // Here we return Promise.all
+  }
+  (drivers = {}),
+    (dataAdded = !1),
+    document.getElementById("uber-file").addEventListener("change", handleFileUploadAndCalculation),
+    document.getElementById("bolt-file").addEventListener("change", handleFileUploadAndCalculation),
+    document.getElementById("freenow-file").addEventListener("change", handleFileUploadAndCalculation),
+    document.getElementById("upload-form").addEventListener("submit", async (a) => {
+      a.preventDefault();
+      let o = document.getElementById("week").value;
+      if (!o) {
+        alert("Please enter a week number");
+        return;
+      }
+      let d = document.getElementById("uber-file"),
+        i = document.getElementById("bolt-file"),
+        n = document.getElementById("freenow-file"),
+        s = { uber: d.files[0], bolt: i.files[0], freenow: n.files[0] };
+
+      let fileData = {};
+      for (let [l, p] of Object.entries(s)) {
+        // Проверяем только, если файл действительно был загружен
+        if (p && !p.name.toLowerCase().endsWith(".csv")) {
+          alert(`Invalid file format for ${l}. Please upload a CSV file.`);
+          return;
+        } else if (p) {
+          fileData[l] = await readCSVFile(p);
+        } else {
+          // Если файл не был загружен, мы просто используем пустой массив
+          fileData[l] = [];
+        }
+      }
+
+      processAllFiles(fileData.uber, fileData.bolt, fileData.freenow, o);
+    });
+
+  $(document).ready(function () {
+    $("form").on("submit", handleFileUploadAndCalculation);
+  });
+
+  function updateWeekNumber() {
+    const startDate = new Date(document.getElementById('start-date').value);
+    const endDate = new Date(document.getElementById('end-date').value);
+
+    const startWeek = getWeekNumber(startDate);
+    const endWeek = getWeekNumber(endDate);
+
+    document.getElementById('week').value = startWeek === endWeek ? startWeek : `${startWeek}-${endWeek}`;
+  }
+
+  function getWeekNumber(d) {
+    d = new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()));
+    d.setUTCDate(d.getUTCDate() + 4 - (d.getUTCDay() || 7));
+    const yearStart = new Date(Date.UTC(d.getUTCFullYear(), 0, 1));
+    const weekNo = Math.ceil((((d - yearStart) / 86400000) + 1) / 7);
+    return weekNo;
+  }
+
+
+  let startDateInput = document.getElementById('start-date').value;
+  let endDateInput = document.getElementById('end-date').value;
+
+  let start = new Date(startDateInput);
+  let end = new Date(endDateInput);
+
+  document.getElementById('start-date').addEventListener('change', updateWeekNumber);
+  document.getElementById('end-date').addEventListener('change', updateWeekNumber);
+
+  function updateWeekNumber() {
+    const startDate = new Date(document.getElementById('start-date').value);
+    const endDate = new Date(document.getElementById('end-date').value);
+
+    const startWeek = getWeekNumber(startDate);
+    const endWeek = getWeekNumber(endDate);
+
+    document.getElementById('week').value = startWeek === endWeek ? startWeek : `${startWeek}-${endWeek}`;
+  }
+
+  function getWeekNumber(d) {
+    d = new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()));
+    d.setUTCDate(d.getUTCDate() + 4 - (d.getUTCDay() || 7));
+    const yearStart = new Date(Date.UTC(d.getUTCFullYear(), 0, 1));
+    const weekNo = Math.ceil((((d - yearStart) / 86400000) + 1) / 7);
+    return weekNo;
+  }
+</script>
