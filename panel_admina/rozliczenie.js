@@ -19,6 +19,11 @@ document.addEventListener('DOMContentLoaded', function () {
     document.getElementById('city-select').addEventListener('change', function () {
         filterData();
     });
+    document.getElementById('rows-per-page').addEventListener('change', function() {
+        rowsPerPage = parseInt(this.value);
+        paginateData(globalData);  // Redraw the table with the new rowsPerPage value
+        document.getElementById('total-pages').textContent = Math.ceil(Object.keys(globalData).length / rowsPerPage);
+    });    
     function filterData() {
         const searchValue = document.getElementById('search').value.toLowerCase();
         const selectedCity = document.getElementById('city-select').value;
@@ -172,4 +177,19 @@ function prevPage() {
 }
 function updateCurrentPage() {
     document.getElementById('current-page').textContent = currentPage;
+}
+function showSkeletonLoader(rows = 15, columns = 20) {
+    const tableBody = document.getElementById('data-table').getElementsByTagName('tbody')[0];
+    tableBody.innerHTML = "";
+    for (let i = 0; i < rows; i++) {
+        const newRow = tableBody.insertRow();
+        for (let j = 0; j < columns; j++) {
+            const newCell = newRow.insertCell();
+            const textNode = document.createElement('div');
+            textNode.className = 'skeleton';
+            textNode.style.height = '20px'; // You can adjust this
+            textNode.style.width = '100%';
+            newCell.appendChild(textNode);
+        }
+    }
 }
