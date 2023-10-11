@@ -115,7 +115,6 @@ function displayDataInTable(data) {
             newRow.insertCell().appendChild(document.createTextNode(formatNumber(weekData.summary.gotowka)));
             newRow.insertCell().appendChild(document.createTextNode(weekData.summary.partner));
             newRow.insertCell().appendChild(document.createTextNode(weekData.summary.service.join(", ") || "N/A"));
-            newRow.insertCell().appendChild(document.createTextNode(weekData.summary.status || "N/A"));
             newRow.insertCell().appendChild(document.createTextNode(formatNumber(weekData.summary.vat_bonus)));
             newRow.insertCell().appendChild(document.createTextNode(formatNumber(weekData.summary.vat_dodatkowy)));
             newRow.insertCell().appendChild(document.createTextNode(formatNumber(weekData.summary.vat_przejazdy)));
@@ -126,6 +125,8 @@ function displayDataInTable(data) {
             newRow.insertCell().appendChild(document.createTextNode(formatNumber(weekData.summary.bonusPartnera)));
             newRow.insertCell().appendChild(document.createTextNode(formatNumber(weekData.summary.podatek_do_zaplaty)));
             newRow.insertCell().appendChild(document.createTextNode(formatNumber(weekData.summary.total)));
+            newRow.insertCell().appendChild(document.createTextNode(weekData.summary.status || "N/A"));
+
                         for (let i = 0; i < newRow.cells.length; i++) {
                 newRow.cells[i].classList.add('data-fade');
             }
@@ -156,7 +157,6 @@ function paginateData(data) {
             newRow.insertCell().appendChild(document.createTextNode(formatNumber(weekData.summary.gotowka)));
             newRow.insertCell().appendChild(document.createTextNode(weekData.summary.partner));
             newRow.insertCell().appendChild(document.createTextNode(weekData.summary.service.join(", ") || "N/A"));
-            newRow.insertCell().appendChild(document.createTextNode(weekData.summary.status || "N/A"));
             newRow.insertCell().appendChild(document.createTextNode(formatNumber(weekData.summary.vat_bonus)));
             newRow.insertCell().appendChild(document.createTextNode(formatNumber(weekData.summary.vat_dodatkowy)));
             newRow.insertCell().appendChild(document.createTextNode(formatNumber(weekData.summary.vat_przejazdy)));
@@ -167,6 +167,8 @@ function paginateData(data) {
             newRow.insertCell().appendChild(document.createTextNode(formatNumber(weekData.summary.bonusPartnera)));
             newRow.insertCell().appendChild(document.createTextNode(formatNumber(weekData.summary.podatek_do_zaplaty)));
             newRow.insertCell().appendChild(document.createTextNode(formatNumber(weekData.summary.total)));
+            newRow.insertCell().appendChild(document.createTextNode(weekData.summary.status || "N/A"));
+
 
         }
     }
