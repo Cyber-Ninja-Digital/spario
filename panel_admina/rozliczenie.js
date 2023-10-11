@@ -189,3 +189,18 @@ function updateCurrentPage() {
 
     document.getElementById('current-page').textContent = currentPage;
 }
+function showSkeletonLoader(rows = 15, columns = 20) {
+    const tableBody = document.getElementById('data-table').getElementsByTagName('tbody')[0];
+    tableBody.innerHTML = "";
+    for (let i = 0; i < rows; i++) {
+        const newRow = tableBody.insertRow();
+        for (let j = 0; j < columns; j++) {
+            const newCell = newRow.insertCell();
+            const textNode = document.createElement('div');
+            textNode.className = 'skeleton';
+            textNode.style.height = '20px'; // You can adjust this
+            textNode.style.width = '100%';
+            newCell.appendChild(textNode);
+        }
+    }
+}
