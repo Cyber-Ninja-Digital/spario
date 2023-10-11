@@ -51,8 +51,10 @@ document.addEventListener('DOMContentLoaded', function () {
 function updateWeekInfo(dateFrom, dateTo) {
     const weekNumberFrom = getWeekNumber(new Date(dateFrom));
     const weekNumberTo = getWeekNumber(new Date(dateTo));
-    document.getElementById('week-info').textContent = `Displaying data for the week: ${dateFrom} to ${dateTo} (Week numbers: ${weekNumberFrom} to ${weekNumberTo})`;
+    document.getElementById('week-info').textContent = 
+        `Displaying data for the week: ${dateFrom} to ${dateTo} (Week numbers: ${weekNumberFrom} to ${weekNumberTo})`;
 }
+
 function getWeekNumber(d) {
     d = new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()));
     d.setUTCDate(d.getUTCDate() + 4 - (d.getUTCDay() || 7));
@@ -62,11 +64,12 @@ function getWeekNumber(d) {
 }
 function getLastWeekDates() {
     const now = new Date();
-    const lastSunday = new Date(now.getFullYear(), now.getMonth(), now.getDate() - now.getDay());
-    const lastMonday = new Date(now.getFullYear(), now.getMonth(), now.getDate() - now.getDay() - 6);
+    const lastSunday = new Date(now.getFullYear(), now.getMonth(), now.getDate() - now.getDay() + 1); // +1 to start week from Monday
+    const lastMonday = new Date(now.getFullYear(), now.getMonth(), now.getDate() - now.getDay() - 5); // -5 to get Monday starting the week
     const formatDate = date => date.toISOString().split('T')[0];
     return [formatDate(lastMonday), formatDate(lastSunday)];
 }
+
 function updateWeekInfo(dateFrom, dateTo) {
     document.getElementById('week-info').textContent = `Displaying data for the week: ${dateFrom} to ${dateTo}`;
 }
