@@ -1,4 +1,5 @@
 let rowsPerPage = 15;
+let sortDirections = Array(22).fill(true);  // For 22 columns
 document.addEventListener('DOMContentLoaded', function () {
     const [dateFrom, dateTo] = getLastWeekDates();
     document.getElementById('date-from').value = dateFrom;
@@ -47,6 +48,14 @@ document.addEventListener('DOMContentLoaded', function () {
         document.getElementById('total-pages').textContent = Math.ceil(Object.keys(filteredData).length / rowsPerPage);
         updateCurrentPage();
     }
+        // Event listener for hiding drivers with kursy = 0
+        document.getElementById('hide-zero-kursy').addEventListener('click', hideZeroKursy);
+
+        // Event listeners for sorting table when column headers are clicked
+        let headers = document.querySelectorAll("#data-table th");
+        headers.forEach((header, index) => {
+            header.addEventListener('click', () => sortTable(index));
+        });
 });
 function updateWeekInfo(dateFrom, dateTo) {
     const weekNumberFrom = getWeekNumber(new Date(dateFrom));
@@ -201,7 +210,7 @@ function updateCurrentPage() {
 
     document.getElementById('current-page').textContent = currentPage;
 }
-function showSkeletonLoader(rows = 15, columns = 22) {
+function showSkeletonLoader(rows = 17, columns = 20) {
     const tableBody = document.getElementById('data-table').getElementsByTagName('tbody')[0];
     tableBody.innerHTML = "";
     for (let i = 0; i < rows; i++) {
@@ -216,7 +225,22 @@ function showSkeletonLoader(rows = 15, columns = 22) {
         }
     }
 }
-let sortDirections = Array(22).fill(true);  // Assuming you have 22 columns
+function hideZeroKursy() {
+    filterZeroKursy();
+    paginateData(globalData);
+    document.getElementById('total-pages').textContent = Math.ceil(Object.keys(globalData).length / rowsPerPage);
+    currentPage = 1;  // Reset to first page after filtering
+    updateCurrentPage();
+}
+
+function filterZeroKursy() {
+    globalData = Object.fromEntries(
+        Object.entries(globalData).filter(([driverId, driverData]) => {
+            const weekData = driverData.weeks?.[Object.keys(driverData.weeks)[0]];
+            return weekData?.summary?.kursy !== 0;
+        })
+    );
+}
 
 function sortTable(columnIndex) {
     const tableBody = document.getElementById('data-table').getElementsByTagName('tbody')[0];
@@ -246,14 +270,3 @@ function sortTable(columnIndex) {
         tableBody.appendChild(row);
     }
 }
-document.getElementById('hide-zero-kursy').addEventListener('click', function() {
-    const tableBody = document.getElementById('data-table').getElementsByTagName('tbody')[0];
-    let rows = Array.from(tableBody.getElementsByTagName('tr'));
-    
-    for (let row of rows) {
-        if (parseFloat(row.cells[2].innerText) === 0) {  // Assuming 'kursy' is the 3rd column (0-indexed)
-            tableBody.removeChild(row);
-        }
-    }
-});
-
