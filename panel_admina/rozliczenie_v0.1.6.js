@@ -90,6 +90,7 @@ function loadAndDisplayData(dateFrom, dateTo) {
     const weekNumberTo = getWeekNumber(new Date(dateTo));
     const apiUrl = `https://us-central1-ccmcolorpartner.cloudfunctions.net/getDriversDataForWeek?weekNumber=${weekNumberFrom}`;
     console.log(`Loading data for the week from: ${dateFrom} to: ${dateTo} (Week numbers: ${weekNumberFrom} to ${weekNumberTo})`);
+    
     fetch(apiUrl)
         .then(response => {
             if (!response.ok) {
@@ -101,11 +102,28 @@ function loadAndDisplayData(dateFrom, dateTo) {
             console.log(data);
             globalData = data; 
             displayDataInTable(data);
+
+            // Update button state and text based on data
+            const isAnyDriverAwaiting = checkIfAnyDriverAwaitingApproval(data);
+            const button = document.getElementById('update-summary-status');
+            button.disabled = !isAnyDriverAwaiting;
+            button.textContent = isAnyDriverAwaiting ? 'Zatwierdzam' : 'Rozliczenia zatwierdzone';
         })
         .catch(error => {
             console.error('Error fetching data: ', error);
         });
 }
+
+function checkIfAnyDriverAwaitingApproval(data) {
+    for (const [driverId, driverData] of Object.entries(data)) {
+        const weekData = driverData.weeks?.[Object.keys(driverData.weeks)[0]];
+        if (weekData && weekData.summary && weekData.summary.status === "Czekam na zatwierdzenie") {
+            return true;
+        }
+    }
+    return false;
+}
+
 function formatNumber(value) {
     // Пробуем преобразовать строку в число
     if (typeof value === 'string') {
