@@ -103,16 +103,23 @@ function loadAndDisplayData(dateFrom, dateTo) {
             globalData = data; 
             displayDataInTable(data);
 
-            // Update button state and text based on data
+            // Update button state, text, and style based on data
             const isAnyDriverAwaiting = checkIfAnyDriverAwaitingApproval(data);
             const button = document.getElementById('update-summary-status');
             button.disabled = !isAnyDriverAwaiting;
             button.textContent = isAnyDriverAwaiting ? 'Zatwierdzam' : 'Rozliczenia zatwierdzone';
+
+            if (isAnyDriverAwaiting) {
+                button.classList.remove('button-disabled'); // Удалите класс для активной кнопки
+            } else {
+                button.classList.add('button-disabled'); // Добавьте класс для неактивной кнопки
+            }
         })
         .catch(error => {
             console.error('Error fetching data: ', error);
         });
 }
+
 
 function checkIfAnyDriverAwaitingApproval(data) {
     for (const [driverId, driverData] of Object.entries(data)) {
