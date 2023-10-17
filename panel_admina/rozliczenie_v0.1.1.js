@@ -216,3 +216,44 @@ function showSkeletonLoader(rows = 15, columns = 22) {
         }
     }
 }
+let sortDirections = Array(22).fill(true);  // Assuming you have 22 columns
+
+function sortTable(columnIndex) {
+    const tableBody = document.getElementById('data-table').getElementsByTagName('tbody')[0];
+    let rows = Array.from(tableBody.getElementsByTagName('tr'));
+    const isAscending = sortDirections[columnIndex];
+    
+    rows.sort((a, b) => {
+        let cellA = a.cells[columnIndex].innerText;
+        let cellB = b.cells[columnIndex].innerText;
+
+        if (!isNaN(cellA) && !isNaN(cellB)) {  // If it's a number
+            cellA = parseFloat(cellA);
+            cellB = parseFloat(cellB);
+        }
+
+        if (cellA < cellB) return isAscending ? -1 : 1;
+        if (cellA > cellB) return isAscending ? 1 : -1;
+        return 0;
+    });
+
+    // Update the direction for the next time the column is clicked
+    sortDirections[columnIndex] = !isAscending;
+
+    // Append the sorted rows to the table body
+    tableBody.innerHTML = "";
+    for (let row of rows) {
+        tableBody.appendChild(row);
+    }
+}
+document.getElementById('hide-zero-kursy').addEventListener('click', function() {
+    const tableBody = document.getElementById('data-table').getElementsByTagName('tbody')[0];
+    let rows = Array.from(tableBody.getElementsByTagName('tr'));
+    
+    for (let row of rows) {
+        if (parseFloat(row.cells[2].innerText) === 0) {  // Assuming 'kursy' is the 3rd column (0-indexed)
+            tableBody.removeChild(row);
+        }
+    }
+});
+
