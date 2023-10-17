@@ -107,6 +107,14 @@ function loadAndDisplayData(dateFrom, dateTo) {
         });
 }
 function formatNumber(value) {
+    // Пробуем преобразовать строку в число
+    if (typeof value === 'string') {
+        const numValue = parseFloat(value);
+        if (!isNaN(numValue)) {
+            value = numValue;
+        }
+    }
+    
     if (typeof value === 'number') {
         return value.toFixed(2);
     } else if (value === null || value === undefined || value === "") {
@@ -115,6 +123,7 @@ function formatNumber(value) {
         return "N/A";
     }
 }
+
 
 function displayDataInTable(data) {
     const tableBody = document.getElementById('data-table').getElementsByTagName('tbody')[0];
