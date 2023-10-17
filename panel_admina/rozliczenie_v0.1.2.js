@@ -107,8 +107,15 @@ function loadAndDisplayData(dateFrom, dateTo) {
         });
 }
 function formatNumber(value) {
-    return typeof value === 'number' ? value.toFixed(2) : "N/A";
+    if (typeof value === 'number') {
+        return value.toFixed(2);
+    } else if (value === null || value === undefined || value === "") {
+        return "0";
+    } else {
+        return "N/A";
+    }
 }
+
 function displayDataInTable(data) {
     const tableBody = document.getElementById('data-table').getElementsByTagName('tbody')[0];
     tableBody.innerHTML = "";
