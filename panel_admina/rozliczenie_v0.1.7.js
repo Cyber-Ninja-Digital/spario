@@ -107,8 +107,7 @@ function loadAndDisplayData(dateFrom, dateTo) {
             const isAnyDriverAwaiting = checkIfAnyDriverAwaitingApproval(data);
             const button = document.getElementById('update-summary-status');
             button.disabled = !isAnyDriverAwaiting;
-            button.textContent = isAnyDriverAwaiting ? 'Zatwierdzam' : 'Rozliczenia zatwierdzone';
-
+button.textContent = 'Rozliczenia zatwierdzone';
             if (isAnyDriverAwaiting) {
                 button.classList.remove('button-disabled'); // Удалите класс для активной кнопки
             } else {
