@@ -2,15 +2,16 @@ let rowsPerPage = 15;
 let sortDirections = Array(22).fill(true);  // For 22 columns
 document.addEventListener('DOMContentLoaded', function () {
         setLastWeekDates();
-    const [dateFrom, dateTo] = getLastWeekDates();
-    document.getElementById('date-from').value = dateFrom;
-    document.getElementById('date-to').value = dateTo;
+const [dateFrom, dateTo] = getLastWeekDates();
+document.getElementById('date-range').value = `${dateFrom} - ${dateTo}`;
+
     updateWeekInfo(dateFrom, dateTo);
     showSkeletonLoader();
     loadAndDisplayData(dateFrom, dateTo);
     document.getElementById('load-data').addEventListener('click', function() {
-        const dateFrom = document.getElementById('date-from').value;
-        const dateTo = document.getElementById('date-to').value;
+const dateInputs = document.getElementById('date-range').value.split(' - ');
+const dateFrom = dateInputs[0];
+const dateTo = dateInputs[1];
         updateWeekInfo(dateFrom, dateTo);
         showSkeletonLoader();
         loadAndDisplayData(dateFrom, dateTo);
