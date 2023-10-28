@@ -312,9 +312,12 @@ function sortTable(columnIndex) {
     }
 }
 $(function() {
+    const [startDate, endDate] = getLastWeekDates();
     $('#date-control input[type="text"]').daterangepicker({
+        startDate: startDate,
+        endDate: endDate,
         "locale": {
-            "format": "DD.MM.YYYY",
+            "format": "YYYY-MM-DD",  // Здесь мы меняем формат на "YYYY-MM-DD"
             "separator": " - ",
             "firstDay": 1 // Понедельник
         },
@@ -322,6 +325,7 @@ $(function() {
         "opens": "center"
     });
 });
+
 document.getElementById('load-data').addEventListener('click', function() {
     const dateInputs = document.querySelector('#date-control input[type="text"]').value.split(' - ');
     const dateFrom = dateInputs[0];
