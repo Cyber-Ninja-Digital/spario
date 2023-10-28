@@ -310,3 +310,27 @@ function sortTable(columnIndex) {
         tableBody.appendChild(row);
     }
 }
+$(function() {
+    $('#date-control input[type="text"]').daterangepicker({
+        "locale": {
+            "format": "DD.MM.YYYY",
+            "separator": " - ",
+            "firstDay": 1 // Понедельник
+        },
+        "autoApply": true,
+        "opens": "center"
+    });
+});
+document.getElementById('load-data').addEventListener('click', function() {
+    const dateInputs = document.querySelector('#date-control input[type="text"]').value.split(' - ');
+    const dateFrom = dateInputs[0];
+    const dateTo = dateInputs[1];
+    
+    updateWeekInfo(dateFrom, dateTo);
+    showSkeletonLoader();
+    loadAndDisplayData(dateFrom, dateTo);
+});
+function setLastWeekDates() {
+    const [dateFrom, dateTo] = getLastWeekDates();
+    document.querySelector('#date-control input[type="text"]').value = `${dateFrom} - ${dateTo}`;
+}
