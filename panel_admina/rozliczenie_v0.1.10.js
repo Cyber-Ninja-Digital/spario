@@ -1,6 +1,7 @@
 let rowsPerPage = 15;
 let sortDirections = Array(22).fill(true);  // For 22 columns
 document.addEventListener('DOMContentLoaded', function () {
+        setLastWeekDates();
     const [dateFrom, dateTo] = getLastWeekDates();
     document.getElementById('date-from').value = dateFrom;
     document.getElementById('date-to').value = dateTo;
