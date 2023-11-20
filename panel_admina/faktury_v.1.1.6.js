@@ -126,28 +126,27 @@ function loadAndDisplayData(dateFrom, dateTo) {
 
  let globalData; // Глобальная переменная для хранения данных
 
- function displayInvoicesInTable(data) {
-     const table = document.getElementById('data-table');
-     if (!table) {
-         console.error('Table with id "data-table" not found');
-         return;
-     }
+function displayInvoicesInTable(data) {
+    const table = document.getElementById('data-table');
+    if (!table) {
+        console.error('Table with id "data-table" not found');
+        return;
+    }
+    const tableBody = table.getElementsByTagName('tbody')[0];
+    tableBody.innerHTML = "";
 
-     // Проверка валидности данных
-     if (typeof data !== 'object' || data === null) {
-         console.error('Data is not a valid object:', data);
-         return;
-     }
+    if (typeof data !== 'object' || data === null) {
+        console.error('Data is not a valid object:', data);
+        return;
+    }
 
-     // Преобразование данных в массив для удобства пагинации
-     const invoicesArray = [];
-     for (const driverName in data) {
-         if (data.hasOwnProperty(driverName)) {
-             const invoices = data[driverName];
-             for (const invoiceId in invoices) {
-                 if (invoices.hasOwnProperty(invoiceId)) {
+    for (const driverName in data) {
+        if (data.hasOwnProperty(driverName)) {
+            const invoices = data[driverName];
+            for (const invoiceId in invoices) {
+                if (invoices.hasOwnProperty(invoiceId)) {
                     const invoice = invoices[invoiceId];
-                     const row = tableBody.insertRow();
+                    const row = tableBody.insertRow();
 
                      row.insertCell().appendChild(document.createTextNode(driverName || "N/A")); // Используйте driverName
          row.insertCell().appendChild(document.createTextNode(invoice.numerfaktury || "N/A"));
