@@ -100,35 +100,36 @@ function updateWeekInfo(dateFrom, dateTo) {
 }
 let invoicesData = [];  // Глобальный массив для хранения данных о фактурах
 
-// Функция для загрузки данных о фактурах
-function loadInvoiceData() {
-    realtimeDb.ref('drivers').on('value', (snapshot) => {
-        const drivers = snapshot.val();
-        invoicesData = []; // Очистка массива перед новой загрузкой данных
+function loadAndDisplayData(dateFrom, dateTo) {
+    const weekNumberFrom = getWeekNumber(new Date(dateFrom));
+    const weekNumberTo = getWeekNumber(new Date(dateTo));
 
-        for (let driverId in drivers) {
-            const driver = drivers[driverId];
-            if (driver.invoices) {
-                for (let invoiceId in driver.invoices) {
-                    const invoice = driver.invoices[invoiceId];
+    // Обновите URL для запроса фактур
+    const apiUrl = `https://us-central1-yourprojectid.cloudfunctions.net/getInvoicesForWeek?weekNumber=${weekNumberFrom}`;
 
-                    // Преобразование даты и добавление дополнительных полей
-                    const date = new Date(invoice.purchaseDate);
-                    const invoiceMonth = ("0" + (date.getMonth() + 1)).slice(-2);
-
-                    invoice.invoiceMonth = invoiceMonth;
-                    invoice.driverId = driverId;
-                    invoice.invoiceId = invoiceId;
-
-                    invoicesData.push(invoice);
-                }
+    console.log(`Loading invoices data for the week from: ${dateFrom} to: ${dateTo} (Week numbers: ${weekNumberFrom} to ${weekNumberTo})`);
+    
+    fetch(apiUrl)
+        .then(response => {
+            if (!response.ok) {
+                throw new Error('Network response was not ok');
             }
-        }
+            return response.json();
+        })
+        .then(invoicesData => {
+            console.log(invoicesData);
+            globalData = invoicesData; // Теперь globalData хранит данные о фактурах
 
-        // После загрузки всех данных, отображаем их в таблице
-        displayInvoicesInTable(invoicesData);
-    });
+            // Отобразите данные фактур в таблице
+            displayDataInTable(invoicesData);
+
+            // Обновите логику для кнопки, если необходимо
+        })
+        .catch(error => {
+            console.error('Error fetching invoices data: ', error);
+        });
 }
+
 
 
 function formatNumber(value) {
