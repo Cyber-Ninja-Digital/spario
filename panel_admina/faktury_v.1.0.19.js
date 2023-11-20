@@ -156,6 +156,7 @@ function loadAndDisplayData(dateFrom, dateTo) {
         return;
     }
 
+
    for (const driverName in data) {
         if (data.hasOwnProperty(driverName)) {
             const invoices = data[driverName];
@@ -198,6 +199,8 @@ function loadAndDisplayData(dateFrom, dateTo) {
             }
         }
     }
+    
+    globalData = data; 
         document.getElementById('total-pages').textContent = Math.ceil(Object.keys(data).length / rowsPerPage);
     paginateData(data);
 }
