@@ -105,7 +105,7 @@ function loadAndDisplayData(dateFrom, dateTo) {
     const weekNumberTo = getWeekNumber(new Date(dateTo));
 
     // Обновите URL для запроса фактур
-    const apiUrl = `https://us-central1-yourprojectid.cloudfunctions.net/getDriversInvoicesForWeek?weekNumber=${weekNumberFrom}`;
+    const apiUrl = `https://us-central1-ccmcolorpartner.cloudfunctions.net/getDriversInvoicesForWeek?weekNumber=${weekNumberFrom}`;
 
     console.log(`Loading invoices data for the week from: ${dateFrom} to: ${dateTo} (Week numbers: ${weekNumberFrom} to ${weekNumberTo})`);
     
