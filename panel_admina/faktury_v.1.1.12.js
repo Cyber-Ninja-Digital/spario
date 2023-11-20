@@ -31,30 +31,38 @@
          currentPage = 1;
          updateCurrentPage();
      });
- function filterData() {
-     const searchValue = document.getElementById('search').value.toLowerCase();
-     const selectedStatus = document.getElementById('status-select').value;
-     const selectedType = document.getElementById('type-select').value;
-     const dateRange = document.getElementById('date-range').value.split(' - ');
-     const dateFrom = new Date(dateRange[0]);
-     const dateTo = new Date(dateRange[1]);
-     const filteredData = invoicesData.filter(invoice => {
-         const invoiceDate = new Date(invoice.purchaseDate);
-         return (
-             (invoice.driverId.toLowerCase().includes(searchValue) ||
-              invoice.invoiceNumber.toLowerCase().includes(searchValue) ||
-              invoice.nipSeller.toLowerCase().includes(searchValue) ||
-              invoice.rejectionComment.toLowerCase().includes(searchValue)) &&
-             (selectedStatus === "all" || invoice.status === selectedStatus) &&
-             (selectedType === "all" || invoice.type === selectedType) &&
-             (invoiceDate >= dateFrom && invoiceDate <= dateTo)
-         );
-     });
-     paginateData(filteredData);
-     document.getElementById('total-pages').textContent = Math.ceil(filteredData.length / rowsPerPage);
-     currentPage = 1;
-     updateCurrentPage();
- }
+function filterData() {
+    const searchValue = document.getElementById('search').value.toLowerCase();
+    const selectedStatus = document.getElementById('status-select').value;
+    const selectedType = document.getElementById('type-select').value;
+    const dateRange = document.getElementById('date-range').value.split(' - ');
+    const dateFrom = new Date(dateRange[0]);
+    const dateTo = new Date(dateRange[1]);
+
+    if (!Array.isArray(globalData)) {
+        console.error('globalData is not an array:', globalData);
+        return; // Выход из функции, если globalData не массив
+    }
+
+    const filteredData = globalData.filter(invoice => {
+        const invoiceDate = new Date(invoice.purchaseDate);
+        return (
+            (invoice.driverName.toLowerCase().includes(searchValue) ||
+             invoice.numerfaktury.toLowerCase().includes(searchValue) ||
+             invoice.nipseller.toLowerCase().includes(searchValue) ||
+             invoice.rejectionComment.toLowerCase().includes(searchValue)) &&
+            (selectedStatus === "all" || invoice.status === selectedStatus) &&
+            (selectedType === "all" || invoice.type === selectedType) &&
+            (invoiceDate >= dateFrom && invoiceDate <= dateTo)
+        );
+    });
+
+    paginateData(filteredData);
+    document.getElementById('total-pages').textContent = Math.ceil(filteredData.length / rowsPerPage);
+    currentPage = 1;
+    updateCurrentPage();
+}
+
  document.getElementById('status-select').addEventListener('change', filterData);
      document.getElementById('type-select').addEventListener('change', filterData);
      document.getElementById('date-range').addEventListener('change', filterData);
