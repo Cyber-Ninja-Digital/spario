@@ -18,7 +18,10 @@
      document.getElementById('search').addEventListener('input', function () {
          filterData();
      });
-     document.getElementById('city-select').addEventListener('change', function () {
+     document.getElementById('status-select').addEventListener('change', function () {
+         filterData();
+     });
+        document.getElementById('type-select').addEventListener('change', function () {
          filterData();
      });
          document.getElementById('rows-per-page').addEventListener('change', function() {
@@ -47,15 +50,18 @@ function filterData() {
 const filteredData = globalData.filter(invoice => {
     const invoiceDate = new Date(invoice.purchaseDate);
     return (
-        (invoice.driverName && invoice.driverName.toLowerCase().includes(searchValue)) ||
-        (invoice.numerfaktury && invoice.numerfaktury.toLowerCase().includes(searchValue)) ||
-        (invoice.nipseller && invoice.nipseller.toLowerCase().includes(searchValue)) ||
-        (invoice.rejectionComment && invoice.rejectionComment.toLowerCase().includes(searchValue)) &&
+        (
+            (invoice.driverName && invoice.driverName.toLowerCase().includes(searchValue)) ||
+            (invoice.numerfaktury && invoice.numerfaktury.toLowerCase().includes(searchValue)) ||
+            (invoice.nipseller && invoice.nipseller.toLowerCase().includes(searchValue)) ||
+            (invoice.rejectionComment && invoice.rejectionComment.toLowerCase().includes(searchValue))
+        ) &&
         (selectedStatus === "all" || invoice.status === selectedStatus) &&
         (selectedType === "all" || invoice.type === selectedType) &&
         (invoiceDate >= dateFrom && invoiceDate <= dateTo)
     );
 });
+
 
 
     paginateData(filteredData);
