@@ -144,53 +144,78 @@ function loadAndDisplayData(dateFrom, dateTo) {
 
 let globalData; // Глобальная переменная для хранения данных
 
-function displayInvoicesInTable(data) {
+ function displayInvoicesInTable(data) {
     const table = document.getElementById('data-table');
     if (!table) {
         console.error('Table with id "data-table" not found');
         return;
     }
+    const tableBody = table.getElementsByTagName('tbody')[0];
+    tableBody.innerHTML = "";
 
-    // Проверка валидности данных
     if (typeof data !== 'object' || data === null) {
         console.error('Data is not a valid object:', data);
         return;
     }
 
-    // Преобразование данных в массив для удобства пагинации
-    const invoicesArray = [];
-    for (const driverName in data) {
+   for (const driverName in data) {
         if (data.hasOwnProperty(driverName)) {
             const invoices = data[driverName];
             for (const invoiceId in invoices) {
                 if (invoices.hasOwnProperty(invoiceId)) {
-                    invoicesArray.push({ driverName, ...invoices[invoiceId] });
+                    const invoice = invoices[invoiceId];
+                    const row = tableBody.insertRow();
+
+                    row.insertCell().appendChild(document.createTextNode(driverName || "N/A")); // Используйте driverName
+        row.insertCell().appendChild(document.createTextNode(invoice.numerfaktury || "N/A"));
+        row.insertCell().appendChild(document.createTextNode(invoice.purchaseDate || "N/A"));
+        row.insertCell().appendChild(document.createTextNode(invoice.type || "N/A"));
+        row.insertCell().appendChild(document.createTextNode(invoice.registrationNumber || "Nie dotyczy"));
+        row.insertCell().appendChild(document.createTextNode(invoice.nipseller || "N/A"));
+        row.insertCell().appendChild(document.createTextNode(invoice.liters || "0"));
+        row.insertCell().appendChild(document.createTextNode(invoice.fuelType || "N/A"));
+        row.insertCell().appendChild(document.createTextNode(invoice.grossAmount || "0"));
+        row.insertCell().appendChild(document.createTextNode(invoice.vatRate || "0%"));
+        row.insertCell().appendChild(document.createTextNode(invoice.netAmount || "0"));
+        row.insertCell().appendChild(document.createTextNode(invoice.vatAmount || "0"));
+        row.insertCell().appendChild(document.createTextNode(invoice.vatReturn || "0"));
+        row.insertCell().appendChild(document.createTextNode(invoice.status || "N/A"));
+
+        // Для cellChangeStatus нужно создать элемент select или другой интерактивный элемент
+        const selectStatus = document.createElement('select');
+        // Заполнение select значениями статусов, можно добавить логику изменения статуса здесь
+        selectStatus.innerHTML = '<option value="zaakceptowany">zaakceptowany</option>';
+        selectStatus.value = invoice.status;
+        row.insertCell().appendChild(selectStatus);
+
+        // Для cellFilePreview можно добавить ссылку, если есть URL файла
+        const fileLink = document.createElement('a');
+        fileLink.href = invoice.fileURL || "#";
+        fileLink.textContent = invoice.fileURL ? "Zobacz plik" : "Nie ma pliku";
+        row.insertCell().appendChild(fileLink);
+
+        row.insertCell().appendChild(document.createTextNode(invoice.rejectionComment || "N/A"));
+        row.insertCell().appendChild(document.createTextNode(invoice.statusSprawdzenia || "N/A"));
                 }
             }
         }
     }
-
-    // Сохраняем данные в глобальную переменную
-    globalData = invoicesArray;
-
-    // Обновляем общее количество страниц
-    document.getElementById('total-pages').textContent = Math.ceil(invoicesArray.length / rowsPerPage);
-
-    // Вызываем пагинацию для отображения первой страницы данных
-    paginateData(invoicesArray);
+        document.getElementById('total-pages').textContent = Math.ceil(Object.keys(data).length / rowsPerPage);
+    paginateData(data);
 }
 
  let currentPage = 1;
-function paginateData(data) {
-    const tableBody = document.getElementById('data-table').getElementsByTagName('tbody')[0];
-    tableBody.innerHTML = "";
+ function paginateData(data) {
+     console.log('Paginating data with', rowsPerPage, 'rows per page');
 
-    const startIndex = (currentPage - 1) * rowsPerPage;
-    const endIndex = startIndex + rowsPerPage;
-    const paginatedData = data.slice(startIndex, endIndex);
+     const tableBody = document.getElementById('invoices-table').getElementsByTagName('tbody')[0];
+     tableBody.innerHTML = "";
+     const startIndex = (currentPage - 1) * rowsPerPage;
+     const endIndex = startIndex + rowsPerPage;
+     const paginatedData = data.slice(startIndex, endIndex);
 
-    for (const invoice of paginatedData) {
-        const row = tableBody.insertRow();
+     for (const invoice of paginatedData) {
+         const row = tableBody.insertRow();
 
          const cellDriverId = row.insertCell();
          const cellInvoiceNumber = row.insertCell();
