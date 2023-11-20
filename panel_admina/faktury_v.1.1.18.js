@@ -40,45 +40,24 @@ document.getElementById('type-select').addEventListener('change', function () {
          currentPage = 1;
          updateCurrentPage();
      });
-function filterData() {
-    const searchValue = document.getElementById('search').value.toLowerCase();
-    const selectedStatus = document.getElementById('status-select').value;
+
+   
+    function filterData() {
+        const searchValue = document.getElementById('search').value.toLowerCase();
     const selectedType = document.getElementById('type-select').value;
-    const dateRange = document.getElementById('date-range').value.split(' - ');
-    const dateFrom = new Date(dateRange[0]);
-    const dateTo = new Date(dateRange[1]);
-
-    if (!Array.isArray(globalData)) {
-        console.error('globalData is not an array:', globalData);
-        return; // Выход из функции, если globalData не массив
-    }
-
-    // Фильтрация данных
-    filteredData = globalData.filter(invoice => {
-        const invoiceDate = new Date(invoice.purchaseDate);
-        return (
-            (
-                (invoice.driverName && invoice.driverName.toLowerCase().includes(searchValue)) ||
-                (invoice.numerfaktury && invoice.numerfaktury.toLowerCase().includes(searchValue)) ||
-                (invoice.nipseller && invoice.nipseller.toLowerCase().includes(searchValue)) ||
-                (invoice.rejectionComment && invoice.rejectionComment.toLowerCase().includes(searchValue))
-            ) &&
-            (selectedStatus === "all" || invoice.status === selectedStatus) &&
-            (selectedType === "all" || invoice.type === selectedType) &&
-            (invoiceDate >= dateFrom && invoiceDate <= dateTo)
+        const filteredData = Object.fromEntries(
+            Object.entries(globalData).filter(([driverId, driverData]) => {
+                const weekData = driverData.weeks?.[Object.keys(driverData.weeks)[0]];
+                return (
+                    driverId.toLowerCase().includes(searchValue) &&
+                    (selectedType === "all" || weekData?.summary?.type === selectedType)
+                );
+            })
         );
-    });
-
-    // Пагинация с использованием отфильтрованных данных
-    paginateData(filteredData);
-    document.getElementById('total-pages').textContent = Math.ceil(filteredData.length / rowsPerPage);
-    currentPage = 1;
-    updateCurrentPage();
-}
-
- document.getElementById('status-select').addEventListener('change', filterData);
-     document.getElementById('type-select').addEventListener('change', filterData);
-     document.getElementById('date-range').addEventListener('change', filterData);
+        paginateData(filteredData);
+        document.getElementById('total-pages').textContent = Math.ceil(Object.keys(filteredData).length / rowsPerPage);
+        updateCurrentPage();
+    }
          // Event listeners for sorting table when column headers are clicked
          let headers = document.querySelectorAll("#data-table th");
          headers.forEach((header, index) => {
