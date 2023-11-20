@@ -156,14 +156,15 @@ function loadAndDisplayData(dateFrom, dateTo) {
         return;
     }
 
-    for (const driver in data) {
-        if (data.hasOwnProperty(driver)) {
-            const invoices = data[driver];
+   for (const driverName in data) {
+        if (data.hasOwnProperty(driverName)) {
+            const invoices = data[driverName];
             for (const invoiceId in invoices) {
                 if (invoices.hasOwnProperty(invoiceId)) {
                     const invoice = invoices[invoiceId];
                     const row = tableBody.insertRow();
-        row.insertCell().appendChild(document.createTextNode(invoice.driverId || "N/A"));
+
+                    row.insertCell().appendChild(document.createTextNode(driverName || "N/A")); // Используйте driverName
         row.insertCell().appendChild(document.createTextNode(invoice.numerfaktury || "N/A"));
         row.insertCell().appendChild(document.createTextNode(invoice.purchaseDate || "N/A"));
         row.insertCell().appendChild(document.createTextNode(invoice.type || "N/A"));
