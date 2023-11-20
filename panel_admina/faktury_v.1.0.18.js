@@ -198,8 +198,8 @@ function loadAndDisplayData(dateFrom, dateTo) {
             }
         }
     }
-    paginateData(Object.values(data).flat()); // Пагинация данных
-
+        document.getElementById('total-pages').textContent = Math.ceil(Object.keys(data).length / rowsPerPage);
+    paginateData(data);
 }
 
  let currentPage = 1;
