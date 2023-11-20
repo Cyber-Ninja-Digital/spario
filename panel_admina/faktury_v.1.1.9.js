@@ -179,8 +179,8 @@ function displayInvoicesInTable(data) {
      for (const invoice of paginatedData) {
          const row = tableBody.insertRow();
 
-  const cellDriverName = row.insertCell();
-        cellDriverName.textContent = invoice.driverName || "N/A"; // Используем поле driverName          
+  const cellDriverId = row.insertCell();
+        cellDriverId.textContent = invoice.driverName || "N/A"; // Используем поле driverName          
        const cellInvoiceNumber = row.insertCell();
          const cellPurchaseDate = row.insertCell();
          const cellType = row.insertCell();
