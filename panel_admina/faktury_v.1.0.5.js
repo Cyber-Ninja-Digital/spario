@@ -66,8 +66,18 @@ function updateWeekInfo(dateFrom, dateTo) {
 
 
 function displayInvoicesInTable(data) {
-    const tableBody = document.getElementById('data-table').getElementsByTagName('tbody')[0];
+    const table = document.getElementById('data-table');
+    if (!table) {
+        console.error('Table with id "data-table" not found');
+        return;
+    }
+    const tableBody = table.getElementsByTagName('tbody')[0];
     tableBody.innerHTML = "";
+
+    if (!Array.isArray(data)) {
+        console.error('Data is not an array:', data);
+        return;
+    }
 
     for (const invoice of data) {
         const row = tableBody.insertRow();
