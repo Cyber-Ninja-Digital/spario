@@ -34,6 +34,7 @@ function loadAndDisplayData(dateFrom, dateTo) {
             return response.json();
         })
         .then(data => {
+            console.log("Data received from server:", data);  // Добавленный вывод в консоль
             invoicesData = data;
             displayInvoicesInTable(invoicesData);
         })
@@ -41,6 +42,7 @@ function loadAndDisplayData(dateFrom, dateTo) {
             console.error('Error fetching invoices data: ', error);
         });
 }
+
 
 function getWeekNumber(d) {
     d = new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()));
