@@ -23,8 +23,7 @@ document.addEventListener('DOMContentLoaded', function () {
 });
 
 function loadAndDisplayData(dateFrom, dateTo) {
-    const weekNumberFrom = getWeekNumber(new Date(dateFrom));
-    const apiUrl = `https://us-central1-ccmcolorpartner.cloudfunctions.net/getDriversInvoicesForWeek?weekNumber=${weekNumberFrom}`;
+    const apiUrl = `https://us-central1-ccmcolorpartner.cloudfunctions.net/getDriversInvoicesForDateRange?dateFrom=${dateFrom}&dateTo=${dateTo}`;
     
     fetch(apiUrl)
         .then(response => {
@@ -34,7 +33,6 @@ function loadAndDisplayData(dateFrom, dateTo) {
             return response.json();
         })
         .then(data => {
-            console.log("Data received from server:", data);  // Добавленный вывод в консоль
             invoicesData = data;
             displayInvoicesInTable(invoicesData);
         })
@@ -42,6 +40,7 @@ function loadAndDisplayData(dateFrom, dateTo) {
             console.error('Error fetching invoices data: ', error);
         });
 }
+
 
 
 function getWeekNumber(d) {
