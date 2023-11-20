@@ -65,6 +65,7 @@ function updateWeekInfo(dateFrom, dateTo) {
 
 
 
+
 function displayInvoicesInTable(data) {
     const table = document.getElementById('data-table');
     if (!table) {
@@ -74,14 +75,18 @@ function displayInvoicesInTable(data) {
     const tableBody = table.getElementsByTagName('tbody')[0];
     tableBody.innerHTML = "";
 
-    if (!Array.isArray(data)) {
-        console.error('Data is not an array:', data);
+    if (typeof data !== 'object' || data === null) {
+        console.error('Data is not a valid object:', data);
         return;
     }
 
-    for (const invoice of data) {
-        const row = tableBody.insertRow();
-
+    for (const driver in data) {
+        if (data.hasOwnProperty(driver)) {
+            const invoices = data[driver];
+            for (const invoiceId in invoices) {
+                if (invoices.hasOwnProperty(invoiceId)) {
+                    const invoice = invoices[invoiceId];
+                    const row = tableBody.insertRow();
         row.insertCell().appendChild(document.createTextNode(invoice.driverId || "N/A"));
         row.insertCell().appendChild(document.createTextNode(invoice.invoiceNumber || "N/A"));
         row.insertCell().appendChild(document.createTextNode(invoice.purchaseDate || "N/A"));
@@ -112,11 +117,13 @@ function displayInvoicesInTable(data) {
 
         row.insertCell().appendChild(document.createTextNode(invoice.rejectionComment || "N/A"));
         row.insertCell().appendChild(document.createTextNode(invoice.statusSprawdzenia || "N/A"));
+                }
+            }
+        }
     }
 
-    paginateData(data); // Пагинация данных
+    paginateData(Object.values(data).flat()); // Пагинация данных
 }
-
 function setLastWeekDates() {
     const [dateFrom, dateTo] = getLastWeekDates();
     document.querySelector('#date-control input[type="text"]').value = `${dateFrom} - ${dateTo}`;
