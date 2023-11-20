@@ -1,5 +1,5 @@
 let rowsPerPage = 15;
-let sortDirections = Array(22).fill(true);  // For 22 columns
+let sortDirections = Array(18).fill(true);  // For 18 columns
 document.addEventListener('DOMContentLoaded', function () {
         setLastWeekDates();
 const [dateFrom, dateTo] = getLastWeekDates();
@@ -34,24 +34,36 @@ const dateTo = dateInputs[1];
         currentPage = 1;
         updateCurrentPage();
     });
-    function filterData() {
-        const searchValue = document.getElementById('search').value.toLowerCase();
-        const selectedCity = document.getElementById('city-select').value;
-        const filteredData = Object.fromEntries(
-            Object.entries(globalData).filter(([driverId, driverData]) => {
-                const weekData = driverData.weeks?.[Object.keys(driverData.weeks)[0]];
-                return (
-                    driverId.toLowerCase().includes(searchValue) &&
-                    (selectedCity === "all" || weekData?.summary?.city === selectedCity)
-                );
-            })
+function filterData() {
+    const searchValue = document.getElementById('search').value.toLowerCase();
+    const selectedStatus = document.getElementById('status-select').value;
+    const selectedType = document.getElementById('type-select').value;
+    const dateRange = document.getElementById('date-range').value.split(' - ');
+    const dateFrom = new Date(dateRange[0]);
+    const dateTo = new Date(dateRange[1]);
+
+    const filteredData = invoicesData.filter(invoice => {
+        const invoiceDate = new Date(invoice.purchaseDate);
+
+        return (
+            (invoice.driverId.toLowerCase().includes(searchValue) ||
+             invoice.invoiceNumber.toLowerCase().includes(searchValue) ||
+             invoice.nipSeller.toLowerCase().includes(searchValue) ||
+             invoice.rejectionComment.toLowerCase().includes(searchValue)) &&
+            (selectedStatus === "all" || invoice.status === selectedStatus) &&
+            (selectedType === "all" || invoice.type === selectedType) &&
+            (invoiceDate >= dateFrom && invoiceDate <= dateTo)
         );
-        paginateData(filteredData);
-        document.getElementById('total-pages').textContent = Math.ceil(Object.keys(filteredData).length / rowsPerPage);
-        updateCurrentPage();
-    }
-        // Event listener for hiding drivers with kursy = 0
-        document.getElementById('hide-zero-kursy').addEventListener('click', hideZeroKursy);
+    });
+
+    paginateData(filteredData);
+    document.getElementById('total-pages').textContent = Math.ceil(filteredData.length / rowsPerPage);
+    currentPage = 1;
+    updateCurrentPage();
+}
+document.getElementById('status-select').addEventListener('change', filterData);
+    document.getElementById('type-select').addEventListener('change', filterData);
+    document.getElementById('date-range').addEventListener('change', filterData);
 
         // Event listeners for sorting table when column headers are clicked
         let headers = document.querySelectorAll("#data-table th");
@@ -86,50 +98,38 @@ function getLastWeekDates() {
 function updateWeekInfo(dateFrom, dateTo) {
     document.getElementById('week-info').textContent = `Displaying data for the week: ${dateFrom} to ${dateTo}`;
 }
-let globalData = null; 
-function loadAndDisplayData(dateFrom, dateTo) {
-    const weekNumberFrom = getWeekNumber(new Date(dateFrom));
-    const weekNumberTo = getWeekNumber(new Date(dateTo));
-    const apiUrl = `https://us-central1-ccmcolorpartner.cloudfunctions.net/getDriversDataForWeek?weekNumber=${weekNumberFrom}`;
-    console.log(`Loading data for the week from: ${dateFrom} to: ${dateTo} (Week numbers: ${weekNumberFrom} to ${weekNumberTo})`);
-    
-    fetch(apiUrl)
-        .then(response => {
-            if (!response.ok) {
-                throw new Error('Network response was not ok');
+let invoicesData = [];  // Глобальный массив для хранения данных о фактурах
+
+// Функция для загрузки данных о фактурах
+function loadInvoiceData() {
+    realtimeDb.ref('drivers').on('value', (snapshot) => {
+        const drivers = snapshot.val();
+        invoicesData = []; // Очистка массива перед новой загрузкой данных
+
+        for (let driverId in drivers) {
+            const driver = drivers[driverId];
+            if (driver.invoices) {
+                for (let invoiceId in driver.invoices) {
+                    const invoice = driver.invoices[invoiceId];
+
+                    // Преобразование даты и добавление дополнительных полей
+                    const date = new Date(invoice.purchaseDate);
+                    const invoiceMonth = ("0" + (date.getMonth() + 1)).slice(-2);
+
+                    invoice.invoiceMonth = invoiceMonth;
+                    invoice.driverId = driverId;
+                    invoice.invoiceId = invoiceId;
+
+                    invoicesData.push(invoice);
+                }
             }
-            return response.json();
-        })
-        .then(data => {
-            console.log(data);
-            globalData = data; 
-            displayDataInTable(data);
-
-            // Update button state, text, and style based on data
-            const isAnyDriverAwaiting = checkIfAnyDriverAwaitingApproval(data);
-            const button = document.getElementById('update-summary-status');
-            button.disabled = !isAnyDriverAwaiting;
-            if (isAnyDriverAwaiting) {
-                button.classList.remove('button-disabled'); // Удалите класс для активной кнопки
-            } else {
-                button.classList.add('button-disabled'); // Добавьте класс для неактивной кнопки
-            }
-        })
-        .catch(error => {
-            console.error('Error fetching data: ', error);
-        });
-}
-
-
-function checkIfAnyDriverAwaitingApproval(data) {
-    for (const [driverId, driverData] of Object.entries(data)) {
-        const weekData = driverData.weeks?.[Object.keys(driverData.weeks)[0]];
-        if (weekData && weekData.summary && weekData.summary.status === "Czekam na zatwierdzenie") {
-            return true;
         }
-    }
-    return false;
+
+        // После загрузки всех данных, отображаем их в таблице
+        displayInvoicesInTable(invoicesData);
+    });
 }
+
 
 function formatNumber(value) {
     // Пробуем преобразовать строку в число
@@ -150,86 +150,110 @@ function formatNumber(value) {
 }
 
 
-function displayDataInTable(data) {
+function displayInvoicesInTable(data) {
     const tableBody = document.getElementById('data-table').getElementsByTagName('tbody')[0];
     tableBody.innerHTML = "";
-    const cities = [...new Set(Object.values(data).map(driverData => driverData.weeks[Object.keys(driverData.weeks)[0]]?.summary?.city))];
-    const citySelect = document.getElementById('city-select');
-    citySelect.innerHTML = `<option value="all">All</option>` + cities.map(city => `<option value="${city}">${city}</option>`).join('');
-    for (const [driverId, driverData] of Object.entries(data)) {
-        const weekData = driverData.weeks?.[Object.keys(driverData.weeks)[0]]; 
-        if (weekData && weekData.summary) {
-            const newRow = tableBody.insertRow();
-            // Add data to the new row
-            newRow.insertCell().appendChild(document.createTextNode(driverId));
-            newRow.insertCell().appendChild(document.createTextNode(weekData.summary.city || "N/A"));
-            newRow.insertCell().appendChild(document.createTextNode(formatNumber(weekData.summary.kursy)));
-            newRow.insertCell().appendChild(document.createTextNode(formatNumber(weekData.summary.przychod_dodatkowy)));
-            newRow.insertCell().appendChild(document.createTextNode(formatNumber(weekData.summary.commission)));
-            newRow.insertCell().appendChild(document.createTextNode(formatNumber(weekData.summary.gotowka)));
-            newRow.insertCell().appendChild(document.createTextNode(weekData.summary.partner));
-            newRow.insertCell().appendChild(document.createTextNode(weekData.summary.service.join(", ") || "N/A"));
-            newRow.insertCell().appendChild(document.createTextNode(formatNumber(weekData.summary.vat_bonus)));
-            newRow.insertCell().appendChild(document.createTextNode(formatNumber(weekData.summary.vat_dodatkowy)));
-            newRow.insertCell().appendChild(document.createTextNode(formatNumber(weekData.summary.vat_przejazdy)));
-            newRow.insertCell().appendChild(document.createTextNode(formatNumber(weekData.summary.wynajem)));
-            newRow.insertCell().appendChild(document.createTextNode(formatNumber(weekData.summary.zus)));
-            newRow.insertCell().appendChild(document.createTextNode(formatNumber(weekData.summary.koztyUZ)));
-            newRow.insertCell().appendChild(document.createTextNode(formatNumber(weekData.summary.inne)));
-            newRow.insertCell().appendChild(document.createTextNode(formatNumber(weekData.summary.bonusPartnera)));
-            newRow.insertCell().appendChild(document.createTextNode(formatNumber(weekData.summary.umowa_najmu)));
-            newRow.insertCell().appendChild(document.createTextNode(formatNumber(weekData.summary.roznica)));
-            newRow.insertCell().appendChild(document.createTextNode(formatNumber(weekData.summary.zwrot_kosztow)));
-            newRow.insertCell().appendChild(document.createTextNode(formatNumber(weekData.summary.podatek_do_zaplaty)));
-            newRow.insertCell().appendChild(document.createTextNode(formatNumber(weekData.summary.total)));
-            newRow.insertCell().appendChild(document.createTextNode(weekData.summary.status || "N/A"));
 
-                        for (let i = 0; i < newRow.cells.length; i++) {
-                newRow.cells[i].classList.add('data-fade');
-            }
-        }
+    for (const invoice of data) {
+        const row = tableBody.insertRow();
+
+        row.insertCell().appendChild(document.createTextNode(invoice.driverId || "N/A"));
+        row.insertCell().appendChild(document.createTextNode(invoice.invoiceNumber || "N/A"));
+        row.insertCell().appendChild(document.createTextNode(invoice.purchaseDate || "N/A"));
+        row.insertCell().appendChild(document.createTextNode(invoice.type || "N/A"));
+        row.insertCell().appendChild(document.createTextNode(invoice.registrationNumber || "Nie dotyczy"));
+        row.insertCell().appendChild(document.createTextNode(invoice.nipSeller || "N/A"));
+        row.insertCell().appendChild(document.createTextNode(invoice.liters || "0"));
+        row.insertCell().appendChild(document.createTextNode(invoice.fuelType || "N/A"));
+        row.insertCell().appendChild(document.createTextNode(invoice.grossAmount || "0"));
+        row.insertCell().appendChild(document.createTextNode(invoice.vatRate || "0%"));
+        row.insertCell().appendChild(document.createTextNode(invoice.netAmount || "0"));
+        row.insertCell().appendChild(document.createTextNode(invoice.vatAmount || "0"));
+        row.insertCell().appendChild(document.createTextNode(invoice.vatReturn || "0"));
+        row.insertCell().appendChild(document.createTextNode(invoice.status || "N/A"));
+
+        // Для cellChangeStatus нужно создать элемент select или другой интерактивный элемент
+        const selectStatus = document.createElement('select');
+        // Заполнение select значениями статусов, можно добавить логику изменения статуса здесь
+        selectStatus.innerHTML = '<option value="zaakceptowany">zaakceptowany</option>';
+        selectStatus.value = invoice.status;
+        row.insertCell().appendChild(selectStatus);
+
+        // Для cellFilePreview можно добавить ссылку, если есть URL файла
+        const fileLink = document.createElement('a');
+        fileLink.href = invoice.fileURL || "#";
+        fileLink.textContent = invoice.fileURL ? "Zobacz plik" : "Nie ma pliku";
+        row.insertCell().appendChild(fileLink);
+
+        row.insertCell().appendChild(document.createTextNode(invoice.rejectionComment || "N/A"));
+        row.insertCell().appendChild(document.createTextNode(invoice.statusSprawdzenia || "N/A"));
     }
-        document.getElementById('total-pages').textContent = Math.ceil(Object.keys(data).length / rowsPerPage);
-    paginateData(data);
+
+    paginateData(data); // Пагинация данных
 }
+
 let currentPage = 1;
 function paginateData(data) {
-    console.log('Paginating data with', rowsPerPage, 'rows per page');  // Добавьте эту строку
+    console.log('Paginating data with', rowsPerPage, 'rows per page');
 
-    const tableBody = document.getElementById('data-table').getElementsByTagName('tbody')[0];
+    const tableBody = document.getElementById('invoices-table').getElementsByTagName('tbody')[0];
     tableBody.innerHTML = "";
     const startIndex = (currentPage - 1) * rowsPerPage;
     const endIndex = startIndex + rowsPerPage;
-    const paginatedData = Object.entries(data).slice(startIndex, endIndex);
-    for (const [driverId, driverData] of paginatedData) {
-        const weekData = driverData.weeks?.[Object.keys(driverData.weeks)[0]]; 
-        if (weekData && weekData.summary) {
-            const newRow = tableBody.insertRow();
-            newRow.insertCell().appendChild(document.createTextNode(driverId));
-            newRow.insertCell().appendChild(document.createTextNode(weekData.summary.city || "N/A"));
-            newRow.insertCell().appendChild(document.createTextNode(formatNumber(weekData.summary.kursy)));
-            newRow.insertCell().appendChild(document.createTextNode(formatNumber(weekData.summary.przychod_dodatkowy)));
-            newRow.insertCell().appendChild(document.createTextNode(formatNumber(weekData.summary.commission)));
-            newRow.insertCell().appendChild(document.createTextNode(formatNumber(weekData.summary.gotowka)));
-            newRow.insertCell().appendChild(document.createTextNode(weekData.summary.partner));
-            newRow.insertCell().appendChild(document.createTextNode(weekData.summary.service.join(", ") || "N/A"));
-            newRow.insertCell().appendChild(document.createTextNode(formatNumber(weekData.summary.vat_bonus)));
-            newRow.insertCell().appendChild(document.createTextNode(formatNumber(weekData.summary.vat_dodatkowy)));
-            newRow.insertCell().appendChild(document.createTextNode(formatNumber(weekData.summary.vat_przejazdy)));
-            newRow.insertCell().appendChild(document.createTextNode(formatNumber(weekData.summary.wynajem)));
-            newRow.insertCell().appendChild(document.createTextNode(formatNumber(weekData.summary.zus)));
-            newRow.insertCell().appendChild(document.createTextNode(formatNumber(weekData.summary.koztyUZ)));
-            newRow.insertCell().appendChild(document.createTextNode(formatNumber(weekData.summary.inne)));
-            newRow.insertCell().appendChild(document.createTextNode(formatNumber(weekData.summary.bonusPartnera)));
-            newRow.insertCell().appendChild(document.createTextNode(formatNumber(weekData.summary.umowa_najmu)));
-            newRow.insertCell().appendChild(document.createTextNode(formatNumber(weekData.summary.roznica)));
-            newRow.insertCell().appendChild(document.createTextNode(formatNumber(weekData.summary.zwrot_kosztow)));
-            newRow.insertCell().appendChild(document.createTextNode(formatNumber(weekData.summary.podatek_do_zaplaty)));
-            newRow.insertCell().appendChild(document.createTextNode(formatNumber(weekData.summary.total)));
-            newRow.insertCell().appendChild(document.createTextNode(weekData.summary.status || "N/A"));
+    const paginatedData = data.slice(startIndex, endIndex);
 
+    for (const invoice of paginatedData) {
+        const row = tableBody.insertRow();
 
-        }
+        const cellDriverId = row.insertCell();
+        const cellInvoiceNumber = row.insertCell();
+        const cellPurchaseDate = row.insertCell();
+        const cellType = row.insertCell();
+        const cellRegistrationNumber = row.insertCell();
+        const cellNipSeller = row.insertCell();
+        const cellLiters = row.insertCell();
+        const cellFuelType = row.insertCell();
+        const cellGrossAmount = row.insertCell();
+        const cellVatRate = row.insertCell();
+        const cellNetAmount = row.insertCell();
+        const cellVatAmount = row.insertCell();
+        const cellVatReturn = row.insertCell();
+        const cellStatus = row.insertCell();
+        const cellChangeStatus = row.insertCell();
+        const cellFilePreview = row.insertCell();
+        const cellRejectionComment = row.insertCell();
+        const cellstatusSprawdzenia = row.insertCell();
+
+        cellDriverId.textContent = invoice.driverId;
+        cellInvoiceNumber.textContent = invoice.numerfaktury;
+        cellPurchaseDate.textContent = invoice.purchaseDate;
+        cellType.textContent = invoice.type;
+        cellRegistrationNumber.textContent = invoice.registrationNumber ? invoice.registrationNumber : "Nie dotyczy";
+        cellNipSeller.textContent = invoice.nipseller;
+        cellLiters.textContent = invoice.liters;
+        cellFuelType.textContent = invoice.fuelType;
+        cellGrossAmount.textContent = invoice.grossAmount;
+        cellVatRate.textContent = invoice.vatRate;
+        cellNetAmount.textContent = invoice.netAmount;
+        cellVatAmount.textContent = invoice.vatAmount;
+        cellVatReturn.textContent = invoice.vatReturn;
+        cellStatus.textContent = invoice.status;
+        cellFilePreview.innerHTML = invoice.fileURL ? '<a href="' + invoice.fileURL + '" target="_blank">Zobacz plik</a>' : 'Nie ma pliku';
+        cellRejectionComment.textContent = invoice.rejectionComment;
+        cellstatusSprawdzenia.textContent = invoice.statusSprawdzenia;
+
+        // Пример создания выпадающего списка для изменения статуса
+        const select = document.createElement('select');
+        select.innerHTML = `
+            <option value="w trakcie sprawdzenia">w trakcie sprawdzenia</option>
+            <option value="zaakceptowany">zaakceptowany</option>
+            <option value="odrzucony">odrzucony</option>
+        `;
+        select.value = invoice.status;
+        select.addEventListener('change', (event) => {
+            // Здесь код для обновления статуса фактуры в базе данных
+        });
+        cellChangeStatus.appendChild(select);
     }
 }
 function nextPage() {
@@ -265,22 +289,6 @@ function showSkeletonLoader(rows = 17, columns = 22) {
             newCell.appendChild(textNode);
         }
     }
-}
-function hideZeroKursy() {
-    filterZeroKursy();
-    paginateData(globalData);
-    document.getElementById('total-pages').textContent = Math.ceil(Object.keys(globalData).length / rowsPerPage);
-    currentPage = 1;  // Reset to first page after filtering
-    updateCurrentPage();
-}
-
-function filterZeroKursy() {
-    globalData = Object.fromEntries(
-        Object.entries(globalData).filter(([driverId, driverData]) => {
-            const weekData = driverData.weeks?.[Object.keys(driverData.weeks)[0]];
-            return weekData?.summary?.kursy !== 0;
-        })
-    );
 }
 
 function sortTable(columnIndex) {
