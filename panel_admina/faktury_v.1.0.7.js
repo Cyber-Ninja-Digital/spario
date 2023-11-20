@@ -122,7 +122,6 @@ function displayInvoicesInTable(data) {
         }
     }
 
-    paginateData(Object.values(data).flat()); // Пагинация данных
 }
 function setLastWeekDates() {
     const [dateFrom, dateTo] = getLastWeekDates();
