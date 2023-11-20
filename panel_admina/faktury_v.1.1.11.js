@@ -179,8 +179,7 @@ function paginateData(data) {
     for (const invoice of paginatedData) {
         const row = tableBody.insertRow();
 
-        const cellDriverName = row.insertCell();
-        cellDriverName.textContent = invoice.driverName || "N/A"; // Используем поле driverName
+const cellDriverId = row.insertCell();
 
         const cellInvoiceNumber = row.insertCell();
          const cellPurchaseDate = row.insertCell();
@@ -199,7 +198,7 @@ function paginateData(data) {
          const cellFilePreview = row.insertCell();
          const cellRejectionComment = row.insertCell();
          const cellstatusSprawdzenia = row.insertCell();
-         cellDriverId.textContent = invoice.driverId;
+        cellDriverId.textContent = invoice.driverName || "N/A"; // Используем поле driverName      
          cellInvoiceNumber.textContent = invoice.numerfaktury;
          cellPurchaseDate.textContent = invoice.purchaseDate;
          cellType.textContent = invoice.type;
