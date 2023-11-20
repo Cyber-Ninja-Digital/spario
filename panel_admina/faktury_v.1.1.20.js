@@ -67,14 +67,16 @@ document.getElementById('type-select').addEventListener('change', function () {
          );
      });
 
-     // Пагинация с использованием отфильтрованных данных
-     paginateData(filteredData);
-     document.getElementById('total-pages').textContent = Math.ceil(filteredData.length / rowsPerPage);
-     currentPage = 1;
-     updateCurrentPage();
-   console.log("Filtered data length:", filteredData.length);
+    // Обновляем globalData с отфильтрованными данными
+    globalData = filteredData;
 
- }
+    // Пагинация с использованием отфильтрованных данных
+    paginateData(globalData);
+    document.getElementById('total-pages').textContent = Math.ceil(globalData.length / rowsPerPage);
+    currentPage = 1;
+    updateCurrentPage();
+    console.log("Filtered data length:", globalData.length);
+}
 
   document.getElementById('status-select').addEventListener('change', filterData);
       document.getElementById('type-select').addEventListener('change', filterData);
@@ -262,10 +264,9 @@ const cellDriverId = row.insertCell();
      }
  }
 function nextPage() {
-    if (currentPage < Math.ceil(filteredData.length / rowsPerPage)) {
+    if (currentPage < Math.ceil(globalData.length / rowsPerPage)) {
         currentPage++;
-        console.log('Current page after next:', currentPage);
-        paginateData(filteredData);
+        paginateData(globalData);
         updateCurrentPage();
     }
 }
@@ -273,8 +274,7 @@ function nextPage() {
 function prevPage() {
     if (currentPage > 1) {
         currentPage--;
-        console.log('Current page after prev:', currentPage);
-        paginateData(filteredData);
+        paginateData(globalData);
         updateCurrentPage();
     }
 }
