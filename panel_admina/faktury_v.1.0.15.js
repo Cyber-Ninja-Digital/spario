@@ -111,6 +111,7 @@ function loadAndDisplayData(dateFrom, dateTo) {
             return response.json();
         })
         .then(data => {
+            console.log("Received data:", data); // Добавлено для отладки
             invoicesData = data;
             displayInvoicesInTable(invoicesData);
         })
@@ -118,6 +119,7 @@ function loadAndDisplayData(dateFrom, dateTo) {
             console.error('Error fetching invoices data: ', error);
         });
 }
+
 
 
 
@@ -162,11 +164,11 @@ function loadAndDisplayData(dateFrom, dateTo) {
                     const invoice = invoices[invoiceId];
                     const row = tableBody.insertRow();
         row.insertCell().appendChild(document.createTextNode(invoice.driverId || "N/A"));
-        row.insertCell().appendChild(document.createTextNode(invoice.invoiceNumber || "N/A"));
+        row.insertCell().appendChild(document.createTextNode(invoice.numerfaktury || "N/A"));
         row.insertCell().appendChild(document.createTextNode(invoice.purchaseDate || "N/A"));
         row.insertCell().appendChild(document.createTextNode(invoice.type || "N/A"));
         row.insertCell().appendChild(document.createTextNode(invoice.registrationNumber || "Nie dotyczy"));
-        row.insertCell().appendChild(document.createTextNode(invoice.nipSeller || "N/A"));
+        row.insertCell().appendChild(document.createTextNode(invoice.nipseller || "N/A"));
         row.insertCell().appendChild(document.createTextNode(invoice.liters || "0"));
         row.insertCell().appendChild(document.createTextNode(invoice.fuelType || "N/A"));
         row.insertCell().appendChild(document.createTextNode(invoice.grossAmount || "0"));
