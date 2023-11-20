@@ -1,4 +1,6 @@
   let rowsPerPage = 15;
+let globalData; // Исходные данные
+let filteredData; // Отфильтрованные данные
  let sortDirections = Array(18).fill(true);  // For 18 columns
  document.addEventListener('DOMContentLoaded', function () {
          setLastWeekDates();
@@ -39,8 +41,6 @@ document.getElementById('type-select').addEventListener('change', function () {
          updateCurrentPage();
      });
 function filterData() {
-      console.log("filterData: start");
-
     const searchValue = document.getElementById('search').value.toLowerCase();
     const selectedStatus = document.getElementById('status-select').value;
     const selectedType = document.getElementById('type-select').value;
@@ -53,29 +53,27 @@ function filterData() {
         return; // Выход из функции, если globalData не массив
     }
 
-const filteredData = globalData.filter(invoice => {
-    const invoiceDate = new Date(invoice.purchaseDate);
-    return (
-        (
-            (invoice.driverName && invoice.driverName.toLowerCase().includes(searchValue)) ||
-            (invoice.numerfaktury && invoice.numerfaktury.toLowerCase().includes(searchValue)) ||
-            (invoice.nipseller && invoice.nipseller.toLowerCase().includes(searchValue)) ||
-            (invoice.rejectionComment && invoice.rejectionComment.toLowerCase().includes(searchValue))
-        ) &&
-        (selectedStatus === "all" || invoice.status === selectedStatus) &&
-        (selectedType === "all" || invoice.type === selectedType) &&
-        (invoiceDate >= dateFrom && invoiceDate <= dateTo)
-    );
-});
+    // Фильтрация данных
+    filteredData = globalData.filter(invoice => {
+        const invoiceDate = new Date(invoice.purchaseDate);
+        return (
+            (
+                (invoice.driverName && invoice.driverName.toLowerCase().includes(searchValue)) ||
+                (invoice.numerfaktury && invoice.numerfaktury.toLowerCase().includes(searchValue)) ||
+                (invoice.nipseller && invoice.nipseller.toLowerCase().includes(searchValue)) ||
+                (invoice.rejectionComment && invoice.rejectionComment.toLowerCase().includes(searchValue))
+            ) &&
+            (selectedStatus === "all" || invoice.status === selectedStatus) &&
+            (selectedType === "all" || invoice.type === selectedType) &&
+            (invoiceDate >= dateFrom && invoiceDate <= dateTo)
+        );
+    });
 
-
-
+    // Пагинация с использованием отфильтрованных данных
     paginateData(filteredData);
     document.getElementById('total-pages').textContent = Math.ceil(filteredData.length / rowsPerPage);
     currentPage = 1;
     updateCurrentPage();
-      console.log("filterData: end, filteredData length:", filteredData.length);
-
 }
 
  document.getElementById('status-select').addEventListener('change', filterData);
@@ -148,7 +146,6 @@ function loadAndDisplayData(dateFrom, dateTo) {
      }
  }
 
- let globalData; // Глобальная переменная для хранения данных
 function updateStatusOptions(statuses) {
     const statusSelect = document.getElementById('status-select');
     statusSelect.innerHTML = '<option value="all">Wszystkie</option>';
