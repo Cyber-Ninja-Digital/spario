@@ -134,7 +134,21 @@ function loadAndDisplayData(dateFrom, dateTo) {
  }
 
  let globalData; // Глобальная переменная для хранения данных
+function updateStatusOptions(statuses) {
+    const statusSelect = document.getElementById('status-select');
+    statusSelect.innerHTML = '<option value="all">Wszystkie</option>';
+    statuses.forEach(status => {
+        statusSelect.innerHTML += `<option value="${status}">${status}</option>`;
+    });
+}
 
+function updateTypeOptions(types) {
+    const typeSelect = document.getElementById('type-select');
+    typeSelect.innerHTML = '<option value="all">Wszystkie</option>';
+    types.forEach(type => {
+        typeSelect.innerHTML += `<option value="${type}">${type}</option>`;
+    });
+}
 function displayInvoicesInTable(data) {
     const table = document.getElementById('data-table');
     if (!table) {
@@ -150,6 +164,8 @@ function displayInvoicesInTable(data) {
     }
 
     const invoicesArray = []; // Собираем все счета в один массив для пагинации
+    let uniqueStatuses = new Set();
+    let uniqueTypes = new Set();
     for (const driverName in data) {
         if (data.hasOwnProperty(driverName)) {
             const invoices = data[driverName];
@@ -158,10 +174,18 @@ function displayInvoicesInTable(data) {
                     const invoice = invoices[invoiceId];
                     invoice.driverName = driverName; // Сохраняем имя водителя в объекте счета
                     invoicesArray.push(invoice);
+
+                    // Собираем уникальные статусы и типы
+                    if (invoice.status) uniqueStatuses.add(invoice.status);
+                    if (invoice.type) uniqueTypes.add(invoice.type);
                 }
             }
         }
     }
+
+    // Обновляем опции в селекторах
+    updateStatusOptions(Array.from(uniqueStatuses));
+    updateTypeOptions(Array.from(uniqueTypes));
 
     // Сохраняем данные в глобальную переменную
     globalData = invoicesArray;
