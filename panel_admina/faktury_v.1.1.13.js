@@ -44,18 +44,19 @@ function filterData() {
         return; // Выход из функции, если globalData не массив
     }
 
-    const filteredData = globalData.filter(invoice => {
-        const invoiceDate = new Date(invoice.purchaseDate);
-        return (
-            (invoice.driverName.toLowerCase().includes(searchValue) ||
-             invoice.numerfaktury.toLowerCase().includes(searchValue) ||
-             invoice.nipseller.toLowerCase().includes(searchValue) ||
-             invoice.rejectionComment.toLowerCase().includes(searchValue)) &&
-            (selectedStatus === "all" || invoice.status === selectedStatus) &&
-            (selectedType === "all" || invoice.type === selectedType) &&
-            (invoiceDate >= dateFrom && invoiceDate <= dateTo)
-        );
-    });
+const filteredData = globalData.filter(invoice => {
+    const invoiceDate = new Date(invoice.purchaseDate);
+    return (
+        (invoice.driverName && invoice.driverName.toLowerCase().includes(searchValue)) ||
+        (invoice.numerfaktury && invoice.numerfaktury.toLowerCase().includes(searchValue)) ||
+        (invoice.nipseller && invoice.nipseller.toLowerCase().includes(searchValue)) ||
+        (invoice.rejectionComment && invoice.rejectionComment.toLowerCase().includes(searchValue)) &&
+        (selectedStatus === "all" || invoice.status === selectedStatus) &&
+        (selectedType === "all" || invoice.type === selectedType) &&
+        (invoiceDate >= dateFrom && invoiceDate <= dateTo)
+    );
+});
+
 
     paginateData(filteredData);
     document.getElementById('total-pages').textContent = Math.ceil(filteredData.length / rowsPerPage);
