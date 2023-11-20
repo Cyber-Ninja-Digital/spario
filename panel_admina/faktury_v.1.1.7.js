@@ -140,57 +140,32 @@ function displayInvoicesInTable(data) {
         return;
     }
 
+    const invoicesArray = []; // Собираем все счета в один массив для пагинации
     for (const driverName in data) {
         if (data.hasOwnProperty(driverName)) {
             const invoices = data[driverName];
             for (const invoiceId in invoices) {
                 if (invoices.hasOwnProperty(invoiceId)) {
                     const invoice = invoices[invoiceId];
-                    const row = tableBody.insertRow();
+                    invoice.driverName = driverName; // Сохраняем имя водителя в объекте счета
+                    invoicesArray.push(invoice);
+                }
+            }
+        }
+    }
 
-                     row.insertCell().appendChild(document.createTextNode(driverName || "N/A")); // Используйте driverName
-         row.insertCell().appendChild(document.createTextNode(invoice.numerfaktury || "N/A"));
-         row.insertCell().appendChild(document.createTextNode(invoice.purchaseDate || "N/A"));
-         row.insertCell().appendChild(document.createTextNode(invoice.type || "N/A"));
-         row.insertCell().appendChild(document.createTextNode(invoice.registrationNumber || "Nie dotyczy"));
-         row.insertCell().appendChild(document.createTextNode(invoice.nipseller || "N/A"));
-         row.insertCell().appendChild(document.createTextNode(invoice.liters || "0"));
-         row.insertCell().appendChild(document.createTextNode(invoice.fuelType || "N/A"));
-         row.insertCell().appendChild(document.createTextNode(invoice.grossAmount || "0"));
-         row.insertCell().appendChild(document.createTextNode(invoice.vatRate || "0%"));
-         row.insertCell().appendChild(document.createTextNode(invoice.netAmount || "0"));
-         row.insertCell().appendChild(document.createTextNode(invoice.vatAmount || "0"));
-         row.insertCell().appendChild(document.createTextNode(invoice.vatReturn || "0"));
-         row.insertCell().appendChild(document.createTextNode(invoice.status || "N/A"));
+    // Сохраняем данные в глобальную переменную
+    globalData = invoicesArray;
 
-         // Для cellChangeStatus нужно создать элемент select или другой интерактивный элемент
-         const selectStatus = document.createElement('select');
-         // Заполнение select значениями статусов, можно добавить логику изменения статуса здесь
-         selectStatus.innerHTML = '<option value="zaakceptowany">zaakceptowany</option>';
-         selectStatus.value = invoice.status;
-         row.insertCell().appendChild(selectStatus);
+    // Обновляем общее количество страниц, если элемент 'total-pages' существует
+    const totalPagesElement = document.getElementById('total-pages');
+    if (totalPagesElement) {
+        totalPagesElement.textContent = Math.ceil(invoicesArray.length / rowsPerPage);
+    }
 
-         // Для cellFilePreview можно добавить ссылку, если есть URL файла
-         const fileLink = document.createElement('a');
-         fileLink.href = invoice.fileURL || "#";
-         fileLink.textContent = invoice.fileURL ? "Zobacz plik" : "Nie ma pliku";
-         row.insertCell().appendChild(fileLink);
-
-         row.insertCell().appendChild(document.createTextNode(invoice.rejectionComment || "N/A"));
-         row.insertCell().appendChild(document.createTextNode(invoice.statusSprawdzenia || "N/A"));                 }
-             }
-         }
-     }
-
-     // Сохраняем данные в глобальную переменную
-     globalData = invoicesArray;
-
-     // Обновляем общее количество страниц
-     document.getElementById('total-pages').textContent = Math.ceil(invoicesArray.length / rowsPerPage);
-
-     // Вызываем пагинацию для отображения первой страницы данных
-     paginateData(invoicesArray);
- }
+    // Вызываем пагинацию для отображения первой страницы данных
+    paginateData(invoicesArray);
+}
 
   let currentPage = 1;
  function paginateData(data) {
