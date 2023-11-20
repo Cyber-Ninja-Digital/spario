@@ -168,20 +168,21 @@ function displayInvoicesInTable(data) {
 }
 
   let currentPage = 1;
- function paginateData(data) {
-     const tableBody = document.getElementById('data-table').getElementsByTagName('tbody')[0];
-     tableBody.innerHTML = "";
+function paginateData(data) {
+    const tableBody = document.getElementById('data-table').getElementsByTagName('tbody')[0];
+    tableBody.innerHTML = "";
 
-     const startIndex = (currentPage - 1) * rowsPerPage;
-     const endIndex = startIndex + rowsPerPage;
-     const paginatedData = data.slice(startIndex, endIndex);
+    const startIndex = (currentPage - 1) * rowsPerPage;
+    const endIndex = startIndex + rowsPerPage;
+    const paginatedData = data.slice(startIndex, endIndex);
 
-     for (const invoice of paginatedData) {
-         const row = tableBody.insertRow();
+    for (const invoice of paginatedData) {
+        const row = tableBody.insertRow();
 
-  const cellDriverId = row.insertCell();
-        cellDriverId.textContent = invoice.driverName || "N/A"; // Используем поле driverName          
-       const cellInvoiceNumber = row.insertCell();
+        const cellDriverName = row.insertCell();
+        cellDriverName.textContent = invoice.driverName || "N/A"; // Используем поле driverName
+
+        const cellInvoiceNumber = row.insertCell();
          const cellPurchaseDate = row.insertCell();
          const cellType = row.insertCell();
          const cellRegistrationNumber = row.insertCell();
