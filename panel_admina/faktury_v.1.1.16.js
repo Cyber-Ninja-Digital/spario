@@ -18,12 +18,16 @@
      document.getElementById('search').addEventListener('input', function () {
          filterData();
      });
-     document.getElementById('status-select').addEventListener('change', function () {
-         filterData();
-     });
-        document.getElementById('type-select').addEventListener('change', function () {
-         filterData();
-     });
+document.getElementById('status-select').addEventListener('change', function () {
+    console.log("Status changed:", this.value);
+    filterData();
+});
+
+document.getElementById('type-select').addEventListener('change', function () {
+    console.log("Type changed:", this.value);
+    filterData();
+});
+
          document.getElementById('rows-per-page').addEventListener('change', function() {
              console.log('Rows per page changed:', this.value);  // Добавьте эту строку
          rowsPerPage = parseInt(this.value);
@@ -35,6 +39,8 @@
          updateCurrentPage();
      });
 function filterData() {
+      console.log("filterData: start");
+
     const searchValue = document.getElementById('search').value.toLowerCase();
     const selectedStatus = document.getElementById('status-select').value;
     const selectedType = document.getElementById('type-select').value;
@@ -68,6 +74,8 @@ const filteredData = globalData.filter(invoice => {
     document.getElementById('total-pages').textContent = Math.ceil(filteredData.length / rowsPerPage);
     currentPage = 1;
     updateCurrentPage();
+      console.log("filterData: end, filteredData length:", filteredData.length);
+
 }
 
  document.getElementById('status-select').addEventListener('change', filterData);
@@ -115,6 +123,7 @@ function loadAndDisplayData(dateFrom, dateTo) {
         })
         .then(data => {
             console.log("Received data:", data); // Добавлено для отладки
+              console.log("loadAndDisplayData: updating globalData");
             invoicesData = data;
             displayInvoicesInTable(invoicesData);
         })
@@ -208,6 +217,8 @@ function displayInvoicesInTable(data) {
 
   let currentPage = 1;
 function paginateData(data) {
+      console.log("paginateData: data length", data.length);
+
     const tableBody = document.getElementById('data-table').getElementsByTagName('tbody')[0];
     tableBody.innerHTML = "";
 
