@@ -285,7 +285,7 @@ function loadAndDisplayData(dateFrom, dateTo) {
 
      document.getElementById('current-page').textContent = currentPage;
  }
- function showSkeletonLoader(rows = 17, columns = 22) {
+ function showSkeletonLoader(rows = 15, columns = 18) {
      const tableBody = document.getElementById('data-table').getElementsByTagName('tbody')[0];
      tableBody.innerHTML = "";
      for (let i = 0; i < rows; i++) {
