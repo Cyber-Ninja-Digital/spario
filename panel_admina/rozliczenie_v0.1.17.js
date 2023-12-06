@@ -87,9 +87,11 @@ function updateWeekInfo(dateFrom, dateTo) {
     document.getElementById('week-info').textContent = `Displaying data for the week: ${dateFrom} to ${dateTo}`;
 }
 let globalData = null; 
+let currentWeekNumber; // Глобальная переменная для хранения номера недели
 function loadAndDisplayData(dateFrom, dateTo) {
     const weekNumberFrom = getWeekNumber(new Date(dateFrom));
     const weekNumberTo = getWeekNumber(new Date(dateTo));
+    currentWeekNumber = weekNumberFrom; // Сохраняем номер недели в глобальную переменную
     const apiUrl = `https://us-central1-ccmcolorpartner.cloudfunctions.net/getDriversDataForWeek?weekNumber=${weekNumberFrom}`;
     console.log(`Loading data for the week from: ${dateFrom} to: ${dateTo} (Week numbers: ${weekNumberFrom} to ${weekNumberTo})`);
     
