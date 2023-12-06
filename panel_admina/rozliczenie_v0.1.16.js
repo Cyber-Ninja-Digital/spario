@@ -1,5 +1,5 @@
 let rowsPerPage = 15;
-let sortDirections = Array(22).fill(true);  // For 22 columns
+let sortDirections = Array(23).fill(true);  // For 22 columns
 document.addEventListener('DOMContentLoaded', function () {
         setLastWeekDates();
 const [dateFrom, dateTo] = getLastWeekDates();
@@ -233,7 +233,13 @@ function paginateData(data) {
             newRow.insertCell().appendChild(document.createTextNode(formatNumber(weekData.summary.podatek_do_zaplaty)));
             newRow.insertCell().appendChild(document.createTextNode(formatNumber(weekData.summary.total)));
             newRow.insertCell().appendChild(document.createTextNode(weekData.summary.status || "N/A"));
-
+          // Добавляем ячейку для кнопки 'Szczegóły'
+            const detailButtonCell = newRow.insertCell();
+            const detailButton = document.createElement('button');
+            detailButton.textContent = 'Szczegóły';
+            detailButton.dataset.driverId = driverId; // Сохраняем идентификатор в атрибуте данных
+            detailButton.addEventListener('click', showDetailsModal);
+            detailButtonCell.appendChild(detailButton);
 
         }
     }
@@ -257,7 +263,7 @@ function updateCurrentPage() {
 
     document.getElementById('current-page').textContent = currentPage;
 }
-function showSkeletonLoader(rows = 17, columns = 22) {
+function showSkeletonLoader(rows = 17, columns = 23) {
     const tableBody = document.getElementById('data-table').getElementsByTagName('tbody')[0];
     tableBody.innerHTML = "";
     for (let i = 0; i < rows; i++) {
