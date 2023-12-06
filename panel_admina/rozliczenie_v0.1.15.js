@@ -183,7 +183,13 @@ function displayDataInTable(data) {
             newRow.insertCell().appendChild(document.createTextNode(formatNumber(weekData.summary.podatek_do_zaplaty)));
             newRow.insertCell().appendChild(document.createTextNode(formatNumber(weekData.summary.total)));
             newRow.insertCell().appendChild(document.createTextNode(weekData.summary.status || "N/A"));
-
+            // Добавляем ячейку для кнопки 'Szczegóły'
+            const detailButtonCell = newRow.insertCell();
+            const detailButton = document.createElement('button');
+            detailButton.textContent = 'Szczegóły';
+            detailButton.dataset.driverId = driverId; // Сохраняем идентификатор в атрибуте данных
+            detailButton.addEventListener('click', showDetailsModal);
+            detailButtonCell.appendChild(detailButton);
                         for (let i = 0; i < newRow.cells.length; i++) {
                 newRow.cells[i].classList.add('data-fade');
             }
