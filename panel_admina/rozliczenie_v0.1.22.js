@@ -325,48 +325,49 @@ function sortTable(columnIndex) {
         tableBody.appendChild(row);
     }
 }
-    $(function () {
-        const dateInputs = $('#date-control input[type="text"]');
+$(function() {
+    const dateInputs = $('#date-control input[type="text"]');
+    
+    if (dateInputs.length > 0) {
+        const [startDate, endDate] = getLastWeekDates();
 
-        if (dateInputs.length > 0) {
-            const [startDate, endDate] = getLastWeekDates();
+        dateInputs.daterangepicker({
+            startDate: startDate,
+            endDate: endDate,
+            locale: {
+                format: "YYYY-MM-DD",
+                separator: " - ",
+                firstDay: 1
+            },
+            autoApply: true,
+            opens: "center"
+        });
 
-            dateInputs.daterangepicker({
-                startDate: startDate,
-                endDate: endDate,
-                locale: {
-                    format: "YYYY-MM-DD",
-                    separator: " - ",
-                    firstDay: 1
-                },
-                autoApply: true,
-                opens: "center"
+        // Check if daterangepicker is initialized
+        const picker = dateInputs.data('daterangepicker');
+        if (picker) {
+            document.getElementById('load-data').addEventListener('click', function() {
+                const dateValues = dateInputs.val().split(' - ');
+                const dateFrom = dateValues[0];
+                const dateTo = dateValues[1];
+                
+                updateWeekInfo(dateFrom, dateTo);
+                showSkeletonLoader();
+                loadAndDisplayData(dateFrom, dateTo);
             });
-
-            const picker = dateInputs.data('daterangepicker');
-            if (picker) {
-                document.getElementById('load-data').addEventListener('click', function () {
-                    const dateValues = dateInputs.val().split(' - ');
-                    const dateFrom = dateValues[0];
-                    const dateTo = dateValues[1];
-
-                    updateWeekInfo(dateFrom, dateTo);
-                    showSkeletonLoader();
-                    loadAndDisplayData(dateFrom, dateTo);
-                });
-            } else {
-                console.error('Date range picker not initialized properly.');
-            }
         } else {
-            console.error('Date inputs not found. Check your selector.');
+            console.error('Date range picker not initialized properly.');
         }
-    });
-
-    function setLastWeekDates() {
-        const [dateFrom, dateTo] = getLastWeekDates();
-        document.querySelector('#date-control input[type="text"]').value = `${dateFrom} - ${dateTo}`;
+    } else {
+        console.error('Date inputs not found. Check your selector.');
     }
 });
+
+
+function setLastWeekDates() {
+    const [dateFrom, dateTo] = getLastWeekDates();
+    document.querySelector('#date-control input[type="text"]').value = `${dateFrom} - ${dateTo}`;
+}
 document.addEventListener('DOMContentLoaded', function () {
     const button = document.getElementById('update-summary-status');
 
