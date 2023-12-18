@@ -368,49 +368,6 @@ function setLastWeekDates() {
     const [dateFrom, dateTo] = getLastWeekDates();
     document.querySelector('#date-control input[type="text"]').value = `${dateFrom} - ${dateTo}`;
 }
-document.addEventListener('DOMContentLoaded', function () {
-    const button = document.getElementById('update-summary-status');
 
-    button.addEventListener('click', function () {
-        const picker = $('#dateRange').data('daterangepicker');
-        
-        if (picker && picker.startDate) {
-            const dateFrom = picker.startDate.format('YYYY-MM-DD');
-            const weekNumberFrom = getWeekNumber(new Date(dateFrom));
-            updateSummaryStatus(weekNumberFrom, "Rozliczenie dodane");
-        } else {
-            console.error('Date picker is not properly initialized.');
-        }
-    });
-});
-
-function updateSummaryStatus(weekNumber, status) {
-    const button = document.getElementById('update-summary-status');
-    button.textContent = 'Zatwierdzam...';
-    button.disabled = true;
-
-    const apiUrl = `https://us-central1-ccmcolorpartner.cloudfunctions.net/setSummaryStatusForWeek?weekNumber=${weekNumber}&status=${status}`;
-    
-    fetch(apiUrl, {
-        method: 'POST',
-    })
-    .then(response => {
-        if (!response.ok) {
-            throw new Error('Network response was not ok');
-        }
-        return response.json();
-    })
-    .then(data => {
-        console.log(data);
-        alert("Status został zaktualizowany pomyślnie!");
-        location.reload();
-    })
-    .catch(error => {
-        console.error('Error updating status: ', error);
-        alert("Wystąpił błąd podczas aktualizacji statusu.");
-        button.textContent = 'Rozliczenia zatwierdzone';
-        button.disabled = false;
-    });
-}
 
 
