@@ -342,16 +342,21 @@ $(function() {
             autoApply: true,
             opens: "center"
         });
-        
-        document.getElementById('load-data').addEventListener('click', function() {
-            const dateInputs = dateInputs.val().split(' - ');
-            const dateFrom = dateInputs[0];
-            const dateTo = dateInputs[1];
-            
-            updateWeekInfo(dateFrom, dateTo);
-            showSkeletonLoader();
-            loadAndDisplayData(dateFrom, dateTo);
-        });
+
+        // Check if daterangepicker is initialized
+        if (dateInputs.data('daterangepicker')) {
+            document.getElementById('load-data').addEventListener('click', function() {
+                const dateValues = dateInputs.val().split(' - ');
+                const dateFrom = dateValues[0];
+                const dateTo = dateValues[1];
+                
+                updateWeekInfo(dateFrom, dateTo);
+                showSkeletonLoader();
+                loadAndDisplayData(dateFrom, dateTo);
+            });
+        } else {
+            console.error('Date range picker not initialized properly.');
+        }
     } else {
         console.error('Date inputs not found. Check your selector.');
     }
