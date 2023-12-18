@@ -344,7 +344,8 @@ $(function() {
         });
 
         // Check if daterangepicker is initialized
-        if (dateInputs.data('daterangepicker')) {
+        const picker = dateInputs.data('daterangepicker');
+        if (picker) {
             document.getElementById('load-data').addEventListener('click', function() {
                 const dateValues = dateInputs.val().split(' - ');
                 const dateFrom = dateValues[0];
@@ -361,6 +362,7 @@ $(function() {
         console.error('Date inputs not found. Check your selector.');
     }
 });
+
 
 function setLastWeekDates() {
     const [dateFrom, dateTo] = getLastWeekDates();
