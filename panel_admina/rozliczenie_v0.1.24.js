@@ -326,48 +326,31 @@ function sortTable(columnIndex) {
     }
 }
 $(function() {
-    const dateInputs = $('#date-control input[type="text"]');
-    
-    if (dateInputs.length > 0) {
-        const [startDate, endDate] = getLastWeekDates();
-
-        dateInputs.daterangepicker({
-            startDate: startDate,
-            endDate: endDate,
-            locale: {
-                format: "YYYY-MM-DD",
-                separator: " - ",
-                firstDay: 1
-            },
-            autoApply: true,
-            opens: "center"
-        });
-
-        // Check if daterangepicker is initialized
-        const picker = dateInputs.data('daterangepicker');
-        if (picker) {
-            document.getElementById('load-data').addEventListener('click', function() {
-                const dateValues = dateInputs.val().split(' - ');
-                const dateFrom = dateValues[0];
-                const dateTo = dateValues[1];
-                
-                updateWeekInfo(dateFrom, dateTo);
-                showSkeletonLoader();
-                loadAndDisplayData(dateFrom, dateTo);
-            });
-        } else {
-            console.error('Date range picker not initialized properly.');
-        }
-    } else {
-        console.error('Date inputs not found. Check your selector.');
-    }
+    const [startDate, endDate] = getLastWeekDates();
+    $('#date-control input[type="text"]').daterangepicker({
+        startDate: startDate,
+        endDate: endDate,
+        "locale": {
+            "format": "YYYY-MM-DD",  // Здесь мы меняем формат на "YYYY-MM-DD"
+            "separator": " - ",
+            "firstDay": 1 // Понедельник
+        },
+        "autoApply": true,
+        "opens": "center"
+    });
 });
 
-
+document.getElementById('load-data').addEventListener('click', function() {
+    const dateInputs = document.querySelector('#date-control input[type="text"]').value.split(' - ');
+    const dateFrom = dateInputs[0];
+    const dateTo = dateInputs[1];
+    
+    updateWeekInfo(dateFrom, dateTo);
+    showSkeletonLoader();
+    loadAndDisplayData(dateFrom, dateTo);
+});
 function setLastWeekDates() {
     const [dateFrom, dateTo] = getLastWeekDates();
     document.querySelector('#date-control input[type="text"]').value = `${dateFrom} - ${dateTo}`;
 }
-
-
 
