@@ -325,46 +325,91 @@ function sortTable(columnIndex) {
         tableBody.appendChild(row);
     }
 }
-$(function() {
-    const dateInputs = $('#date-control input[type="text"]');
-    
-    if (dateInputs.length > 0) {
-        const [startDate, endDate] = getLastWeekDates();
+    $(function () {
+        const dateInputs = $('#date-control input[type="text"]');
 
-        dateInputs.daterangepicker({
-            startDate: startDate,
-            endDate: endDate,
-            locale: {
-                format: "YYYY-MM-DD",
-                separator: " - ",
-                firstDay: 1
-            },
-            autoApply: true,
-            opens: "center"
-        });
+        if (dateInputs.length > 0) {
+            const [startDate, endDate] = getLastWeekDates();
 
-        // Check if daterangepicker is initialized
-        const picker = dateInputs.data('daterangepicker');
-        if (picker) {
-            document.getElementById('load-data').addEventListener('click', function() {
-                const dateValues = dateInputs.val().split(' - ');
-                const dateFrom = dateValues[0];
-                const dateTo = dateValues[1];
-                
-                updateWeekInfo(dateFrom, dateTo);
-                showSkeletonLoader();
-                loadAndDisplayData(dateFrom, dateTo);
+            dateInputs.daterangepicker({
+                startDate: startDate,
+                endDate: endDate,
+                locale: {
+                    format: "YYYY-MM-DD",
+                    separator: " - ",
+                    firstDay: 1
+                },
+                autoApply: true,
+                opens: "center"
             });
+
+            const picker = dateInputs.data('daterangepicker');
+            if (picker) {
+                document.getElementById('load-data').addEventListener('click', function () {
+                    const dateValues = dateInputs.val().split(' - ');
+                    const dateFrom = dateValues[0];
+                    const dateTo = dateValues[1];
+
+                    updateWeekInfo(dateFrom, dateTo);
+                    showSkeletonLoader();
+                    loadAndDisplayData(dateFrom, dateTo);
+                });
+            } else {
+                console.error('Date range picker not initialized properly.');
+            }
         } else {
-            console.error('Date range picker not initialized properly.');
+            console.error('Date inputs not found. Check your selector.');
         }
-    } else {
-        console.error('Date inputs not found. Check your selector.');
+    });
+
+    function setLastWeekDates() {
+        const [dateFrom, dateTo] = getLastWeekDates();
+        document.querySelector('#date-control input[type="text"]').value = `${dateFrom} - ${dateTo}`;
     }
 });
+document.addEventListener('DOMContentLoaded', function () {
+    const button = document.getElementById('update-summary-status');
 
+    button.addEventListener('click', function () {
+        const picker = $('#dateRange').data('daterangepicker');
+        
+        if (picker && picker.startDate) {
+            const dateFrom = picker.startDate.format('YYYY-MM-DD');
+            const weekNumberFrom = getWeekNumber(new Date(dateFrom));
+            updateSummaryStatus(weekNumberFrom, "Rozliczenie dodane");
+        } else {
+            console.error('Date picker is not properly initialized.');
+        }
+    });
+});
 
-function setLastWeekDates() {
-    const [dateFrom, dateTo] = getLastWeekDates();
-    document.querySelector('#date-control input[type="text"]').value = `${dateFrom} - ${dateTo}`;
+function updateSummaryStatus(weekNumber, status) {
+    const button = document.getElementById('update-summary-status');
+    button.textContent = 'Zatwierdzam...';
+    button.disabled = true;
+
+    const apiUrl = `https://us-central1-ccmcolorpartner.cloudfunctions.net/setSummaryStatusForWeek?weekNumber=${weekNumber}&status=${status}`;
+    
+    fetch(apiUrl, {
+        method: 'POST',
+    })
+    .then(response => {
+        if (!response.ok) {
+            throw new Error('Network response was not ok');
+        }
+        return response.json();
+    })
+    .then(data => {
+        console.log(data);
+        alert("Status został zaktualizowany pomyślnie!");
+        location.reload();
+    })
+    .catch(error => {
+        console.error('Error updating status: ', error);
+        alert("Wystąpił błąd podczas aktualizacji statusu.");
+        button.textContent = 'Rozliczenia zatwierdzone';
+        button.disabled = false;
+    });
 }
+
+
