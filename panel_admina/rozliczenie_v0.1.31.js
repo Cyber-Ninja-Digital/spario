@@ -337,7 +337,7 @@ $(function() {
             fromLabel: "Od",
             toLabel: "Do",
             customRangeLabel: "Niestandardowy",
-            weekLabel: "Tydz",
+            weekLabel: "Tg",
             daysOfWeek: ["Nd", "Pn", "Wt", "Śr", "Cz", "Pt", "Sb"],
             monthNames: ["Styczeń", "Luty", "Marzec", "Kwiecień", "Maj", "Czerwiec", "Lipiec", "Sierpień", "Wrzesień", "Październik", "Listopad", "Grudzień"],
             firstDay: 1
