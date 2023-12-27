@@ -331,26 +331,38 @@ $(function() {
         locale: {
             format: "YYYY-MM-DD",
             separator: " - ",
+            firstDay: 1,
+            applyLabel: "Zastosuj",
+            cancelLabel: "Anuluj",
+            fromLabel: "Od",
+            toLabel: "Do",
+            customRangeLabel: "Niestandardowy",
+            weekLabel: "Tydz",
+            daysOfWeek: ["Nd", "Pn", "Wt", "Śr", "Cz", "Pt", "Sb"],
+            monthNames: ["Styczeń", "Luty", "Marzec", "Kwiecień", "Maj", "Czerwiec", "Lipiec", "Sierpień", "Wrzesień", "Październik", "Listopad", "Grudzień"],
             firstDay: 1
         },
-        autoApply: false, // Отключаем автоматическое применение, чтобы пользователь мог выбрать неделю
+        autoApply: false, // Отключаем автоматическое применение
         opens: "center"
     });
 
-    // Слушатель для выбора недели
-    $('#date-range').on('apply.daterangepicker', function(ev, picker) {
-        var start = picker.startDate;
-        var end = picker.endDate;
+    $('#date-range').on('showCalendar.daterangepicker', function(ev, picker) {
+        // Обработчик для клика по номеру недели
+        $(picker.container).find('.calendar-table .week').off('click').on('click', function(e) {
+            var clickedWeekNumber = $(this).text();
+            var clickedDate = picker.leftCalendar.calendar[0][$(this).parent().index()];
+            
+            // Определяем начало и конец недели на основе выбранной даты
+            var startOfWeek = moment(clickedDate).day("Monday");
+            var endOfWeek = moment(clickedDate).day("Sunday");
 
-        // Выбор начала и конца недели
-        var startOfWeek = start.clone().startOf('isoWeek');
-        var endOfWeek = end.clone().endOf('isoWeek');
-
-        // Обновление диапазона дат в datepicker
-        picker.setStartDate(startOfWeek);
-        picker.setEndDate(endOfWeek);
+            picker.setStartDate(startOfWeek);
+            picker.setEndDate(endOfWeek);
+            picker.clickApply();
+        });
     });
 });
+
 
 
 
