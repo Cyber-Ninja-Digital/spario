@@ -326,19 +326,32 @@ function sortTable(columnIndex) {
     }
 }
 $(function() {
-    const [startDate, endDate] = getLastWeekDates();
     $('#date-range').daterangepicker({
-        startDate: startDate,
-        endDate: endDate,
+        showWeekNumbers: true, // Отображение номеров недель
         locale: {
             format: "YYYY-MM-DD",
             separator: " - ",
             firstDay: 1
         },
-        autoApply: true,
+        autoApply: false, // Отключаем автоматическое применение, чтобы пользователь мог выбрать неделю
         opens: "center"
     });
+
+    // Слушатель для выбора недели
+    $('#date-range').on('apply.daterangepicker', function(ev, picker) {
+        var start = picker.startDate;
+        var end = picker.endDate;
+
+        // Выбор начала и конца недели
+        var startOfWeek = start.clone().startOf('isoWeek');
+        var endOfWeek = end.clone().endOf('isoWeek');
+
+        // Обновление диапазона дат в datepicker
+        picker.setStartDate(startOfWeek);
+        picker.setEndDate(endOfWeek);
+    });
 });
+
 
 
 document.getElementById('load-data').addEventListener('click', function() {
