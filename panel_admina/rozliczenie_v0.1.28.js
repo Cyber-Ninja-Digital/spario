@@ -347,14 +347,12 @@ $(function() {
     });
 
     $('#date-range').on('showCalendar.daterangepicker', function(ev, picker) {
-        // Обработчик для клика по номеру недели
         $(picker.container).find('.calendar-table .week').off('click').on('click', function(e) {
-            var clickedWeekNumber = $(this).text();
             var clickedDate = picker.leftCalendar.calendar[0][$(this).parent().index()];
-            
+
             // Определяем начало и конец недели на основе выбранной даты
-            var startOfWeek = moment(clickedDate).day("Monday");
-            var endOfWeek = moment(clickedDate).day("Sunday");
+            var startOfWeek = moment(clickedDate).startOf('isoWeek');
+            var endOfWeek = moment(clickedDate).endOf('isoWeek');
 
             picker.setStartDate(startOfWeek);
             picker.setEndDate(endOfWeek);
