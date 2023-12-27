@@ -326,12 +326,15 @@ function sortTable(columnIndex) {
     }
 }
 $(function() {
-    $('#date-range').daterangepicker({
+    // Инициализация daterangepicker
+    var selectedDateRange = null; // Переменная для хранения выбранного диапазона дат
+
+    var datePicker = $('#date-range').daterangepicker({
         showWeekNumbers: true, // Отображение номеров недель
         locale: {
             format: "YYYY-MM-DD",
             separator: " - ",
-            firstDay: 1,
+            firstDay: 1, // Понедельник как первый день недели
             applyLabel: "Zastosuj",
             cancelLabel: "Anuluj",
             fromLabel: "Od",
@@ -339,35 +342,55 @@ $(function() {
             customRangeLabel: "Niestandardowy",
             weekLabel: "Tg",
             daysOfWeek: ["Nd", "Pn", "Wt", "Śr", "Cz", "Pt", "Sb"],
-            monthNames: ["Styczeń", "Luty", "Marzec", "Kwiecień", "Maj", "Czerwiec", "Lipiec", "Sierpień", "Wrzesień", "Październik", "Listopad", "Grudzień"],
-            firstDay: 1
+            monthNames: ["Styczeń", "Luty", "Marzec", "Kwiecień", "Maj", "Czerwiec", "Lipiec", "Sierpień", "Wrzesień", "Październik", "Listopad", "Grudzień"]
         },
         autoApply: false, // Отключаем автоматическое применение
         opens: "center"
     });
 
-$('#date-range').on('showCalendar.daterangepicker', function(ev, picker) {
-    // Отменяем предыдущие обработчики событий, если они были установлены
-    $(picker.container).find('.calendar-table .week').off('click').on('click', function(e) {
-        // Находим ячейку с датой, которая соответствует дню недели, откуда начинается неделя (обычно понедельник)
-        var firstDayCell = $(this).closest('tr').find('td').not('.week').first();
-        var lastDayCell = $(this).closest('tr').find('td').not('.week').last();
+    console.log("daterangepicker инициализирован");
 
-        // Получаем дату из данных атрибута
-        var startOfWeek = moment(firstDayCell.data('date'), picker.locale.format);
-        var endOfWeek = moment(lastDayCell.data('date'), picker.locale.format);
-
-        // Проверяем валидность полученных дат
-        if (startOfWeek.isValid() && endOfWeek.isValid()) {
-            // Устанавливаем начало и конец недели
-            picker.setStartDate(startOfWeek);
-            picker.setEndDate(endOfWeek);
-            // Принудительно вызываем обработчик кнопки "Применить", если autoApply выключен
-            picker.clickApply();
+    // Обработчик события showCalendar.daterangepicker
+    datePicker.on('showCalendar.daterangepicker', function(ev, picker) {
+        // Если выбранный диапазон дат существует, устанавливаем его при открытии календаря
+        if (selectedDateRange) {
+            picker.setStartDate(selectedDateRange.start);
+            picker.setEndDate(selectedDateRange.end);
         }
+
+        // Привязываем обработчик событий к строкам таблицы
+        $(picker.container).find('.calendar-table tr').on('click', function() {
+            var weekNumber = $(this).find('.week').text(); // Номер недели
+            var startDay = null;
+            var endDay = null;
+
+            // Находим первый день недели (понедельник) с учетом локали
+            var firstDayOfWeek = moment().startOf('isoWeek').isoWeek(weekNumber);
+            
+            // Находим последний день недели (воскресенье)
+            var lastDayOfWeek = firstDayOfWeek.clone().endOf('isoWeek');
+
+            startDay = firstDayOfWeek;
+            endDay = lastDayOfWeek;
+
+            if (startDay && endDay) {
+                // Обновляем выбранный диапазон дат
+                selectedDateRange = {
+                    start: startDay,
+                    end: endDay
+                };
+
+                picker.setStartDate(startDay);
+                picker.setEndDate(endDay);
+
+                if (!picker.autoApply) {
+                    picker.clickApply();
+                }
+            }
+        });
     });
 });
-});
+
 
 
 
