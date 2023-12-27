@@ -346,18 +346,25 @@ $(function() {
         opens: "center"
     });
 
-  $('#date-range').on('showCalendar.daterangepicker', function(ev, picker) {
-        $(picker.container).find('.calendar-table .week').off('click').on('click', function(e) {
-            var clickedDate = picker.leftCalendar.calendar[0][$(this).parent().index()];
+$('#date-range').on('showCalendar.daterangepicker', function(ev, picker) {
+    // Отменяем предыдущие обработчики событий, если они были установлены
+    $(picker.container).find('.calendar-table .week').off('click').on('click', function(e) {
+        // Находим ячейку с датой, которая соответствует дню недели, откуда начинается неделя (обычно понедельник)
+        var firstDayCell = $(this).closest('tr').find('td').not('.week').first();
+        var lastDayCell = $(this).closest('tr').find('td').not('.week').last();
 
-            // Определяем начало и конец недели на основе выбранной даты
-            var startOfWeek = moment(clickedDate).startOf('isoWeek');
-            var endOfWeek = moment(clickedDate).endOf('isoWeek');
+        // Получаем дату из данных атрибута
+        var startOfWeek = moment(firstDayCell.data('date'), picker.locale.format);
+        var endOfWeek = moment(lastDayCell.data('date'), picker.locale.format);
 
+        // Проверяем валидность полученных дат
+        if (startOfWeek.isValid() && endOfWeek.isValid()) {
+            // Устанавливаем начало и конец недели
             picker.setStartDate(startOfWeek);
             picker.setEndDate(endOfWeek);
+            // Принудительно вызываем обработчик кнопки "Применить", если autoApply выключен
             picker.clickApply();
-        });
+        }
     });
 });
 
