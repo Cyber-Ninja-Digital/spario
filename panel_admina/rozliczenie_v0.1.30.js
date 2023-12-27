@@ -328,10 +328,6 @@ function sortTable(columnIndex) {
 $(function() {
     $('#date-range').daterangepicker({
         showWeekNumbers: true, // Отображение номеров недель
-        singleDatePicker: true, // Отображать только один календарь
-        showDropdowns: true, // Позволяет выбирать месяц и год
-        autoApply: true, // Автоматическое применение выбора
-        opens: "center", // Открывать календарь по центру
         locale: {
             format: "YYYY-MM-DD",
             separator: " - ",
@@ -346,13 +342,11 @@ $(function() {
             monthNames: ["Styczeń", "Luty", "Marzec", "Kwiecień", "Maj", "Czerwiec", "Lipiec", "Sierpień", "Wrzesień", "Październik", "Listopad", "Grudzień"],
             firstDay: 1
         },
+        autoApply: false, // Отключаем автоматическое применение
+        opens: "center"
     });
 
-    // Скрыть второй календарь с помощью CSS
-    $('.drp-calendar.right').hide(); // Прячем правый календарь
-
     $('#date-range').on('showCalendar.daterangepicker', function(ev, picker) {
-        // Отключаем стандартный обработчик клика по неделе, чтобы установить свой
         $(picker.container).find('.calendar-table .week').off('click').on('click', function(e) {
             var clickedDate = picker.leftCalendar.calendar[0][$(this).parent().index()];
 
