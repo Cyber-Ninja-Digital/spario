@@ -346,20 +346,29 @@ $(function() {
         opens: "center"
     });
 
-    $('#date-range').on('showCalendar.daterangepicker', function(ev, picker) {
-        $(picker.container).find('.calendar-table .week').off('click').on('click', function(e) {
-            var clickedDate = picker.leftCalendar.calendar[0][$(this).parent().index()];
+$('#date-range').on('showCalendar.daterangepicker', function(ev, picker) {
+    // Снимаем предыдущие обработчики событий на номера недель, чтобы избежать повторных обработчиков
+    $(picker.container).find('.calendar-table .week').off('click').on('click', function(e) {
+        // Получаем дату, соответствующую первому дню строки, где был клик
+        var row = $(this).closest('tr');
+        var firstDayOfRow = row.find('td').first().data('date');
 
-            // Определяем начало и конец недели на основе выбранной даты
-            var startOfWeek = moment(clickedDate).startOf('isoWeek');
-            var endOfWeek = moment(clickedDate).endOf('isoWeek');
+        // Если дата не определена (например, в ячейках месяцев до/после), попробуем получить дату из последней ячейки
+        if (!firstDayOfRow) {
+            firstDayOfRow = row.find('td').last().data('date');
+        }
 
-            picker.setStartDate(startOfWeek);
-            picker.setEndDate(endOfWeek);
-            picker.clickApply();
-        });
+        // Определяем начало и конец недели на основе найденной даты
+        var startOfWeek = moment(firstDayOfRow, picker.locale.format).startOf('isoWeek');
+        var endOfWeek = moment(firstDayOfRow, picker.locale.format).endOf('isoWeek');
+
+        // Устанавливаем выбранные даты в календарь
+        picker.setStartDate(startOfWeek);
+        picker.setEndDate(endOfWeek);
+        picker.clickApply();
     });
 });
+
 
 
 
