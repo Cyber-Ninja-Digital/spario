@@ -367,7 +367,7 @@ $('#date-range').on('showCalendar.daterangepicker', function(ev, picker) {
         }
     });
 });
-
+});
 
 
 
