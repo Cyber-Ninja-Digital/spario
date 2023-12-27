@@ -346,25 +346,18 @@ $(function() {
         opens: "center"
     });
 
-$('#date-range').on('showCalendar.daterangepicker', function(ev, picker) {
-    $(picker.container).find('.calendar-table .week').off('click').on('click', function(e) {
-        var clickedWeekNumber = $(this).text();
-        var clickedCell = $(this).closest('tr').find('td').eq(1).attr('data-title');
-        var clickedDate = moment(clickedCell, 'YYYYMMDD');
-        
-        if (!clickedDate.isValid()) {
-            // Если дата невалидна, возможно, клик был на номере недели предыдущего или следующего месяца
-            return;
-        }
+  $('#date-range').on('showCalendar.daterangepicker', function(ev, picker) {
+        $(picker.container).find('.calendar-table .week').off('click').on('click', function(e) {
+            var clickedDate = picker.leftCalendar.calendar[0][$(this).parent().index()];
 
-        var startOfWeek = clickedDate.startOf('isoWeek');
-        var endOfWeek = clickedDate.endOf('isoWeek');
-        
-        picker.setStartDate(startOfWeek);
-        picker.setEndDate(endOfWeek);
-        picker.updateView();
-        // Вызываем apply вручную, так как мы не используем autoApply
-        picker.clickApply();
+            // Определяем начало и конец недели на основе выбранной даты
+            var startOfWeek = moment(clickedDate).startOf('isoWeek');
+            var endOfWeek = moment(clickedDate).endOf('isoWeek');
+
+            picker.setStartDate(startOfWeek);
+            picker.setEndDate(endOfWeek);
+            picker.clickApply();
+        });
     });
 });
 
