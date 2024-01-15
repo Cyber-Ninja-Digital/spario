@@ -60,20 +60,13 @@ const dateTo = dateInputs[1];
         });
 });
 function updateWeekInfo(dateFrom, dateTo) {
-    const weekNumberFrom = getWeekNumber(new Date(dateFrom));
-    const weekNumberTo = getWeekNumber(new Date(dateTo));
+    const weekNumberFrom = `${getWeekNumber(new Date(dateFrom))}-${new Date(dateFrom).getFullYear()}`;
     document.getElementById('week-info').textContent = 
         `Wyświetlane dane za tydzień: ${dateFrom} do ${dateTo} (Numery tygodni: ${weekNumberFrom} do ${weekNumberTo})`;
 }
 
 
-function getWeekNumber(d) {
-    d = new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()));
-    d.setUTCDate(d.getUTCDate() + 4 - (d.getUTCDay() || 7));
-    var yearStart = new Date(Date.UTC(d.getUTCFullYear(),0,1));
-var weekNo = Math.ceil(( ( (d - yearStart) / 86400000) + 1)/7);
-return ${weekNo}-${d.getUTCFullYear()}; // Возвращает номер недели и год
-}
+function getWeekNumber(d) { d = new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate())); d.setUTCDate(d.getUTCDate() + 4 - (d.getUTCDay() || 7)); var yearStart = new Date(Date.UTC(d.getUTCFullYear(),0,1)); var weekNo = Math.ceil(( ( (d - yearStart) / 86400000) + 1)/7); return weekNo; }
 
 
 function getLastWeekDates() {
