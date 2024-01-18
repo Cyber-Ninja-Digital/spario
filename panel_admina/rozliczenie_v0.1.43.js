@@ -52,8 +52,8 @@ document.addEventListener('DOMContentLoaded', function () {
         });
 });
 
-function updateWeekInfo(dateFrom, dateTo) {
-    document.getElementById('week-info').textContent = `Displaying data for the week: ${dateFrom} to ${dateTo}`;
+function updateWeekInfo(week) {
+    document.getElementById('week-info').textContent = `Displaying data for the week: ${latestWeek}`;
 }
 let globalData = null; 
 let currentWeekNumber; 
@@ -78,6 +78,7 @@ function loadAndDisplayData() {
     const latestWeek = weeks[0];
     select.value = latestWeek;
     loadAndDisplayWeekData(latestWeek);
+    updateWeekInfo(latestWeek);
 })
 }
 // Глобальная переменная для хранения номера недели
