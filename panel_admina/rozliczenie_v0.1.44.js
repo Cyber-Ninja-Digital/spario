@@ -52,9 +52,7 @@ document.addEventListener('DOMContentLoaded', function () {
         });
 });
 
-function updateWeekInfo(week) {
-    document.getElementById('week-info').textContent = `Displaying data for the week: ${latestWeek}`;
-}
+
 let globalData = null; 
 let currentWeekNumber; 
 function loadAndDisplayData() {
@@ -80,6 +78,9 @@ function loadAndDisplayData() {
     loadAndDisplayWeekData(latestWeek);
     updateWeekInfo(latestWeek);
 })
+}
+function updateWeekInfo(week) {
+    document.getElementById('week-info').textContent = `Wyświetlanie danych za tydzień: ${week}`;
 }
 // Глобальная переменная для хранения номера недели
 function loadAndDisplayWeekData(week) {
