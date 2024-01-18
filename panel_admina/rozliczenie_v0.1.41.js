@@ -3,7 +3,7 @@ let sortDirections = Array(23).fill(true);  // For 22 columns
 document.addEventListener('DOMContentLoaded', function () {
         setLastWeekDates();
 const [dateFrom, dateTo] = getLastWeekDates();
-document.getElementById('date-range').value = `${dateFrom} - ${dateTo}`;
+//document.getElementById('date-range').value = `${dateFrom} - ${dateTo}`;
 
     updateWeekInfo(dateFrom, dateTo);
     showSkeletonLoader();
@@ -16,6 +16,10 @@ const dateTo = dateInputs[1];
         showSkeletonLoader();
         loadAndDisplayData(dateFrom, dateTo);
     });
+        document.getElementById('week-select').addEventListener('change', function() {
+    // The selected week will be this.value
+    loadAndDisplayData(this.value);
+});
     document.getElementById('search').addEventListener('input', function () {
         filterData();
     });
@@ -82,7 +86,9 @@ function updateWeekInfo(dateFrom, dateTo) {
 }
 let globalData = null; 
 let currentWeekNumber; // Глобальная переменная для хранения номера недели
-function loadAndDisplayData(dateFrom, dateTo) {
+function loadAndDisplayData(week) {
+    const apiUrl = `https://us-central1-ccmcolorpartner.cloudfunctions.net/getDriversDataForWeek?weekNumber=${week}`;
+    console.log(`Loading data for week: ${week}`);
     const weekNumberFrom = getWeekNumber(new Date(dateFrom));
     const weekNumberTo = getWeekNumber(new Date(dateTo));
     currentWeekNumber = weekNumberFrom; // Сохраняем номер недели в глобальную переменную
