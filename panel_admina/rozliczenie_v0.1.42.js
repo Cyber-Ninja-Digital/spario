@@ -1,25 +1,13 @@
-let rowsPerPage = 15;
+  let rowsPerPage = 15;
 let sortDirections = Array(23).fill(true);  // For 22 columns
 document.addEventListener('DOMContentLoaded', function () {
-        setLastWeekDates();
-const [dateFrom, dateTo] = getLastWeekDates();
-//document.getElementById('date-range').value = `${dateFrom} - ${dateTo}`;
-
-    updateWeekInfo(dateFrom, dateTo);
-    showSkeletonLoader();
-    loadAndDisplayData(dateFrom, dateTo);
-    document.getElementById('load-data').addEventListener('click', function() {
-const dateInputs = document.getElementById('date-range').value.split(' - ');
-const dateFrom = dateInputs[0];
-const dateTo = dateInputs[1];
-        updateWeekInfo(dateFrom, dateTo);
-        showSkeletonLoader();
-        loadAndDisplayData(dateFrom, dateTo);
+    loadAndDisplayData();
+    document.getElementById('week-select').addEventListener('change', function() {
+        const selectedWeek = this.value;
+        loadAndDisplayWeekData(selectedWeek);
     });
-        document.getElementById('week-select').addEventListener('change', function() {
-    // The selected week will be this.value
-    loadAndDisplayData(this.value);
-});
+    showSkeletonLoader();
+
     document.getElementById('search').addEventListener('input', function () {
         filterData();
     });
@@ -63,37 +51,42 @@ const dateTo = dateInputs[1];
             header.addEventListener('click', () => sortTable(index));
         });
 });
-function updateWeekInfo(dateFrom, dateTo) {
-    const weekNumberFrom = `${getWeekNumber(new Date(dateFrom))}-${new Date(dateFrom).getFullYear()}`;
-    document.getElementById('week-info').textContent = 
-        `Wyświetlane dane za tydzień: ${dateFrom} do ${dateTo} (Numery tygodni: ${weekNumberFrom} do ${weekNumberTo})`;
-}
-
-
-function getWeekNumber(d) { d = new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate())); d.setUTCDate(d.getUTCDate() + 4 - (d.getUTCDay() || 7)); var yearStart = new Date(Date.UTC(d.getUTCFullYear(),0,1)); var weekNo = Math.ceil(( ( (d - yearStart) / 86400000) + 1)/7); return weekNo; }
-
-
-function getLastWeekDates() {
-    const now = new Date();
-    const lastSunday = new Date(now.getFullYear(), now.getMonth(), now.getDate() - now.getDay() + 1); // +1 to start week from Monday
-    const lastMonday = new Date(now.getFullYear(), now.getMonth(), now.getDate() - now.getDay() - 5); // -5 to get Monday starting the week
-    const formatDate = date => date.toISOString().split('T')[0];
-    return [formatDate(lastMonday), formatDate(lastSunday)];
-}
 
 function updateWeekInfo(dateFrom, dateTo) {
     document.getElementById('week-info').textContent = `Displaying data for the week: ${dateFrom} to ${dateTo}`;
 }
 let globalData = null; 
-let currentWeekNumber; // Глобальная переменная для хранения номера недели
-function loadAndDisplayData(week) {
-    const apiUrl = `https://us-central1-ccmcolorpartner.cloudfunctions.net/getDriversDataForWeek?weekNumber=${week}`;
+let currentWeekNumber; 
+function loadAndDisplayData() {
+    showSkeletonLoader();
+    // Загрузите доступные недели
+    fetch('https://us-central1-ccmcolorpartner.cloudfunctions.net/getAvailableWeeks')
+    .then(response => response.json())
+.then(weeks => {
+    // Сортируем недели в порядке убывания
+    weeks.sort((a, b) => {
+        const [weekA, yearA] = a.split('-').map(Number);
+        const [weekB, yearB] = b.split('-').map(Number);
+        return yearB - yearA || weekB - weekA;
+    });
+
+    // Обновление списка недель в user interface (UI)
+    const select = document.getElementById('week-select');
+    select.innerHTML = weeks.map(week => `<option value="${week}">${week}</option>`);
+
+    // Загрузите данные для последней недели в списке
+    const latestWeek = weeks[0];
+    select.value = latestWeek;
+    loadAndDisplayWeekData(latestWeek);
+})
+}
+// Глобальная переменная для хранения номера недели
+function loadAndDisplayWeekData(week) {
+      const apiUrl = `https://us-central1-ccmcolorpartner.cloudfunctions.net/getDriversDataForWeek?weekNumber=${week}`;
     console.log(`Loading data for week: ${week}`);
-    const weekNumberFrom = getWeekNumber(new Date(dateFrom));
-    const weekNumberTo = getWeekNumber(new Date(dateTo));
-    currentWeekNumber = weekNumberFrom; // Сохраняем номер недели в глобальную переменную
-    const apiUrl = `https://us-central1-ccmcolorpartner.cloudfunctions.net/getDriversDataForWeek?weekNumber=${weekNumberFrom}`;
-    console.log(`Loading data for the week from: ${dateFrom} to: ${dateTo} (Week numbers: ${weekNumberFrom} to ${weekNumberTo})`);
+
+    currentWeekNumber = week; // Сохраняем номер недели в глобальную переменную
+    console.log(`Loading data for the week from: (Week numbers: ${week})`);
     
     fetch(apiUrl)
         .then(response => {
@@ -325,88 +318,17 @@ function sortTable(columnIndex) {
         tableBody.appendChild(row);
     }
 }
-$(function() {
-    // Инициализация daterangepicker
-    var selectedDateRange = null; // Переменная для хранения выбранного диапазона дат
-
-    var datePicker = $('#date-range').daterangepicker({
-        showWeekNumbers: true, // Отображение номеров недель
-        locale: {
-            format: "YYYY-MM-DD",
-            separator: " - ",
-            firstDay: 1, // Понедельник как первый день недели
-            applyLabel: "Zastosuj",
-            cancelLabel: "Anuluj",
-            fromLabel: "Od",
-            toLabel: "Do",
-            customRangeLabel: "Niestandardowy",
-            weekLabel: "Tg",
-            daysOfWeek: ["Nd", "Pn", "Wt", "Śr", "Cz", "Pt", "Sb"],
-            monthNames: ["Styczeń", "Luty", "Marzec", "Kwiecień", "Maj", "Czerwiec", "Lipiec", "Sierpień", "Wrzesień", "Październik", "Listopad", "Grudzień"]
-        },
-        autoApply: false, // Отключаем автоматическое применение
-        opens: "center"
-    });
-
-    console.log("daterangepicker инициализирован");
-
-    // Обработчик события showCalendar.daterangepicker
-    datePicker.on('showCalendar.daterangepicker', function(ev, picker) {
-        // Если выбранный диапазон дат существует, устанавливаем его при открытии календаря
-        if (selectedDateRange) {
-            picker.setStartDate(selectedDateRange.start);
-            picker.setEndDate(selectedDateRange.end);
-        }
-
-        // Привязываем обработчик событий к строкам таблицы
-        $(picker.container).find('.calendar-table tr').on('click', function() {
-            var weekNumber = $(this).find('.week').text(); // Номер недели
-            var startDay = null;
-            var endDay = null;
-
-            // Находим первый день недели (понедельник) с учетом локали
-            var firstDayOfWeek = moment().startOf('isoWeek').isoWeek(weekNumber);
-            
-            // Находим последний день недели (воскресенье)
-            var lastDayOfWeek = firstDayOfWeek.clone().endOf('isoWeek');
-
-            startDay = firstDayOfWeek;
-            endDay = lastDayOfWeek;
-
-            if (startDay && endDay) {
-                // Обновляем выбранный диапазон дат
-                selectedDateRange = {
-                    start: startDay,
-                    end: endDay
-                };
-
-                picker.setStartDate(startDay);
-                picker.setEndDate(endDay);
-
-                if (!picker.autoApply) {
-                    picker.clickApply();
-                }
-            }
-        });
-    });
-});
 
 
 
 
 
 
-document.getElementById('load-data').addEventListener('click', function() {
-    const dateInputs = document.querySelector('#date-control input[type="text"]').value.split(' - ');
-    const dateFrom = dateInputs[0];
-    const dateTo = dateInputs[1];
-    
-    updateWeekInfo(dateFrom, dateTo);
-    showSkeletonLoader();
-    loadAndDisplayData(dateFrom, dateTo);
-});
+
+
+
+
 function setLastWeekDates() {
     const [dateFrom, dateTo] = getLastWeekDates();
     document.querySelector('#date-control input[type="text"]').value = `${dateFrom} - ${dateTo}`;
 }
-
