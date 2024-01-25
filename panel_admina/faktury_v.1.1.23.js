@@ -258,9 +258,14 @@ const cellDriverId = row.insertCell();
          `;
          select.value = invoice.status;
 select.addEventListener('change', (event) => {
-    const newStatus = event.target.value;
-    const driverId = event.target.parentNode.parentNode.dataset.driverId;
-    const invoiceId = event.target.parentNode.parentNode.dataset.invoiceId;
+     const newStatus = event.target.value;
+     const driverId = select.parentNode.getAttribute('data-driver-id');
+     const invoiceId = select.parentNode.getAttribute('data-invoice-id');
+
+     console.log("New status:", newStatus);
+     console.log("Driver ID:", driverId);
+     console.log("Invoice ID:", invoiceId);
+
     const url = 'https://us-central1-ccmcolorpartner.cloudfunctions.net/updateInvoiceStatus'; // Замените на ваш URL
 
     fetch(url, {
