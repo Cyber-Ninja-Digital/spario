@@ -261,7 +261,7 @@ select.addEventListener('change', (event) => {
     const newStatus = event.target.value;
     const driverId = event.target.parentNode.parentNode.dataset.driverId;
     const invoiceId = event.target.parentNode.parentNode.dataset.invoiceId;
-    const url = 'https://your-server.com/updateInvoiceStatus'; // Замените на ваш URL
+    const url = 'https://us-central1-ccmcolorpartner.cloudfunctions.net/updateInvoiceStatus'; // Замените на ваш URL
 
     fetch(url, {
         method: 'POST',
