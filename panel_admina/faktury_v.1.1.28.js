@@ -275,20 +275,28 @@ const select = document.createElement('select');
 
     const url = 'https://us-central1-ccmcolorpartner.cloudfunctions.net/updateInvoiceStatus'; // Замените на ваш URL
 
-    fetch(url, {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ driverId, invoiceId, status: newStatus }), // отправляем данные в формате JSON
-    })
-    .then(response => response.text())  
-    .then(data => {
-        console.log('Success:', data);
-    })
-    .catch((error) => {
-        console.error('Error:', error);
-    });
+fetch(url, {
+    method: 'POST',
+    headers: {
+        'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({ driverId, invoiceId, status: newStatus }),
+})
+.then(response => {
+    if (!response.ok) throw new Error(response.statusText);
+    return response.text();
+})
+.then(data => {
+    console.log('Success:', data);
+    Swal.fire(
+        'Updated!',
+        'The status has been updated.',
+        'success'
+    );
+})
+.catch((error) => {
+    console.error('Error:', error);
+});
 });
          cellChangeStatus.appendChild(select);
      }
