@@ -259,26 +259,24 @@ const cellDriverId = row.insertCell();
          select.value = invoice.status;
 select.addEventListener('change', (event) => {
     const newStatus = event.target.value;
-    const driverId = invoice.driverId; // Только если у вас в структуре данных имеется driverId
-    const invoiceId = invoice.invoiceId; // Предполагаем, что у вас есть invoiceId в структуре данных
+    const driverId = event.target.parentNode.parentNode.dataset.driverId;
+    const invoiceId = event.target.parentNode.parentNode.dataset.invoiceId;
+    const url = 'https://your-server.com/updateInvoiceStatus'; // Замените на ваш URL
 
-    fetch("https://us-central1-ccmcolorpartner.cloudfunctions.net/updateInvoiceStatus", {
+    fetch(url, {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
         },
-        body: JSON.stringify({
-            driverId: driverId,
-            invoiceId: invoiceId,
-            status: newStatus
-        }),
+        body: JSON.stringify({ driverId, invoiceId, status: newStatus }), // отправляем данные в формате JSON
     })
-    .then(response => response.json())
-    .then(data => console.log(data))
+    .then(response => response.text())  
+    .then(data => {
+        console.log('Success:', data);
+    })
     .catch((error) => {
         console.error('Error:', error);
     });
-
 });
          cellChangeStatus.appendChild(select);
      }
