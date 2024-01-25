@@ -230,8 +230,10 @@ const cellDriverId = row.insertCell();
          const cellVatAmount = row.insertCell();
          const cellVatReturn = row.insertCell();
          const cellStatus = row.insertCell();
-         const cellChangeStatus = row.insertCell();
-         const cellFilePreview = row.insertCell();
+    const cellChangeStatus = row.insertCell();
+    cellChangeStatus.setAttribute('data-driver-id', invoice.driverName);
+    cellChangeStatus.setAttribute('data-invoice-id', invoice.invoiceId);
+     const cellFilePreview = row.insertCell();
          const cellRejectionComment = row.insertCell();
          const cellstatusSprawdzenia = row.insertCell();
         cellDriverId.textContent = invoice.driverName || "N/A"; // Используем поле driverName      
@@ -252,21 +254,19 @@ const cellDriverId = row.insertCell();
          cellRejectionComment.textContent = invoice.rejectionComment;
          cellstatusSprawdzenia.textContent = invoice.statusSprawdzenia;
 
-     
-         cellChangeStatus.setAttribute('data-driver-id', invoice.driverName);
-    cellChangeStatus.setAttribute('data-invoice-id', invoice.invoiceId);
-     const select = document.createElement('select');
-         select.innerHTML = `
-             <option value="w trakcie sprawdzenia">w trakcie sprawdzenia</option>
-             <option value="zaakceptowany">zaakceptowany</option>
-             <option value="odrzucony">odrzucony</option>
-         `;
-         select.value = invoice.status;
-select.addEventListener('change', (event) => {
+    
+const select = document.createElement('select');
+    select.innerHTML = `
+        <option value="w trakcie sprawdzenia">w trakcie sprawdzenia</option>
+        <option value="zaakceptowany">zaakceptowany</option>
+        <option value="odrzucony">odrzucony</option>
+    `;
+    select.value = invoice.status;
+    select.addEventListener('change', (event) => {
      const newStatus = event.target.value;
-     const driverId = select.parentNode.getAttribute('data-driver-id');
-     const invoiceId = select.parentNode.getAttribute('data-invoice-id');
-
+        const driverId = cellChangeStatus.getAttribute('data-driver-id');
+        const invoiceId = cellChangeStatus.getAttribute('data-invoice-id');
+     
      console.log("New status:", newStatus);
      console.log("Driver ID:", driverId);
      console.log("Invoice ID:", invoiceId);
