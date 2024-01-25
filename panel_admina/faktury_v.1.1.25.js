@@ -176,26 +176,28 @@ function displayInvoicesInTable(data) {
     const invoicesArray = []; // Собираем все счета в один массив для пагинации
     let uniqueStatuses = new Set();
     let uniqueTypes = new Set();
-    for (const driverName in data) {
-        if (data.hasOwnProperty(driverName)) {
-            const invoices = data[driverName];
-            for (const invoiceId in invoices) {
-                if (invoices.hasOwnProperty(invoiceId)) {
-                    const invoice = invoices[invoiceId];
-                    invoice.driverName = driverName; // Сохраняем имя водителя в объекте счета
-                    invoicesArray.push(invoice);
-                    // Собираем уникальные статусы и типы
-                    if (invoice.status) uniqueStatuses.add(invoice.status);
-                    if (invoice.type) uniqueTypes.add(invoice.type);
-                }
+for (const driverName in data) {
+    if (data.hasOwnProperty(driverName)) {
+        const invoices = data[driverName];
+        for (const invoiceId in invoices) {
+            if (invoices.hasOwnProperty(invoiceId)) {
+                const invoice = invoices[invoiceId];
+                invoice.driverName = driverName; // Сохраняем имя водителя в объекте счета
+                invoice.invoiceId = invoiceId; // Сохраняем ID счета-фактуры
+                invoicesArray.push(invoice);
+                // Собираем уникальные статусы и типы
+                if (invoice.status) uniqueStatuses.add(invoice.status);
+                if (invoice.type) uniqueTypes.add(invoice.type);
             }
         }
     }
+}
     // Обновляем опции в селекторах
     updateStatusOptions(Array.from(uniqueStatuses));
     updateTypeOptions(Array.from(uniqueTypes));
-    // Сохраняем данные в глобальную переменную
-    globalData = invoicesArray;
+        const driverIdValue = invoice.driverName; 
+        const invoiceIdValue = invoice.invoiceId;
+ globalData = invoicesArray;
     // Обновляем общее количество страниц, если элемент 'total-pages' существует
     const totalPagesElement = document.getElementById('total-pages');
     if (totalPagesElement) {
@@ -249,8 +251,11 @@ const cellDriverId = row.insertCell();
          cellFilePreview.innerHTML = invoice.fileURL ? '<a href="' + invoice.fileURL + '" target="_blank">Zobacz plik</a>' : 'Nie ma pliku';
          cellRejectionComment.textContent = invoice.rejectionComment;
          cellstatusSprawdzenia.textContent = invoice.statusSprawdzenia;
-         // Пример создания выпадающего списка для изменения статуса
-         const select = document.createElement('select');
+
+     
+         cellChangeStatus.setAttribute('data-driver-id', invoice.driverName);
+    cellChangeStatus.setAttribute('data-invoice-id', invoice.invoiceId);
+     const select = document.createElement('select');
          select.innerHTML = `
              <option value="w trakcie sprawdzenia">w trakcie sprawdzenia</option>
              <option value="zaakceptowany">zaakceptowany</option>
