@@ -257,9 +257,29 @@ const cellDriverId = row.insertCell();
              <option value="odrzucony">odrzucony</option>
          `;
          select.value = invoice.status;
-         select.addEventListener('change', (event) => {
-             // Здесь код для обновления статуса фактуры в базе данных
-         });
+select.addEventListener('change', (event) => {
+    const newStatus = event.target.value;
+    const driverId = invoice.driverId; // Только если у вас в структуре данных имеется driverId
+    const invoiceId = invoice.invoiceId; // Предполагаем, что у вас есть invoiceId в структуре данных
+
+    fetch("https://us-central1-ccmcolorpartner.cloudfunctions.net/updateInvoiceStatus", {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+            driverId: driverId,
+            invoiceId: invoiceId,
+            status: newStatus
+        }),
+    })
+    .then(response => response.json())
+    .then(data => console.log(data))
+    .catch((error) => {
+        console.error('Error:', error);
+    });
+
+});
          cellChangeStatus.appendChild(select);
      }
  }
