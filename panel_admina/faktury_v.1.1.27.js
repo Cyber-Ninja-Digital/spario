@@ -176,34 +176,36 @@ function displayInvoicesInTable(data) {
     const invoicesArray = []; // Собираем все счета в один массив для пагинации
     let uniqueStatuses = new Set();
     let uniqueTypes = new Set();
-for (const driverName in data) {
-    if (data.hasOwnProperty(driverName)) {
-        const invoices = data[driverName];
-        for (const invoiceId in invoices) {
-            if (invoices.hasOwnProperty(invoiceId)) {
-                const invoice = invoices[invoiceId];
-                invoice.driverName = driverName; // Сохраняем имя водителя в объекте счета
-                invoice.invoiceId = invoiceId; // Сохраняем ID счета-фактуры
-                invoicesArray.push(invoice);
-                // Собираем уникальные статусы и типы
-                if (invoice.status) uniqueStatuses.add(invoice.status);
-                if (invoice.type) uniqueTypes.add(invoice.type);
+    for (const driverName in data) {
+        if (data.hasOwnProperty(driverName)) {
+            const invoices = data[driverName];
+            for (const invoiceId in invoices) {
+                if (invoices.hasOwnProperty(invoiceId)) {
+                    const invoice = invoices[invoiceId];
+                    invoice.driverName = driverName; // Сохраняем имя водителя в объекте счета
+                    invoice.invoiceId = invoiceId; // Сохраняем ID счета-фактуры
+                    invoicesArray.push(invoice);
+                    // Собираем уникальные статусы и типы
+                    if (invoice.status) uniqueStatuses.add(invoice.status);
+                    if (invoice.type) uniqueTypes.add(invoice.type);
+                }
             }
         }
     }
-}
     // Обновляем опции в селекторах
     updateStatusOptions(Array.from(uniqueStatuses));
     updateTypeOptions(Array.from(uniqueTypes));
-        const driverIdValue = invoice.driverName; 
-        const invoiceIdValue = invoice.invoiceId;
- globalData = invoicesArray;
-    // Обновляем общее количество страниц, если элемент 'total-pages' существует
+
+    // Save invoicesArray in a global variable for later use
+    globalData = invoicesArray;
+  
+    // Update total pages
     const totalPagesElement = document.getElementById('total-pages');
     if (totalPagesElement) {
         totalPagesElement.textContent = Math.ceil(invoicesArray.length / rowsPerPage);
     }
-    // Вызываем пагинацию для отображения первой страницы данных
+
+    // Call paginateData to display the first page of data
     paginateData(invoicesArray);
 }
   let currentPage = 1;
