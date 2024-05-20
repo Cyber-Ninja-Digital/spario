@@ -41,6 +41,7 @@ async function loadAndDisplayData() {
     select.innerHTML = weeks.map(week => `<option value="${week}">${week}</option>`);
     const latestWeek = weeks[0];
     select.value = latestWeek;
+    currentWeekNumber = latestWeek; // Записываем выбранную неделю в глобальную переменную
     loadAndDisplayWeekData(latestWeek);
     updateWeekInfo(latestWeek);
 }
