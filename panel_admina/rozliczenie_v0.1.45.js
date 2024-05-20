@@ -1,5 +1,5 @@
 let rowsPerPage = 15;
-let sortDirections = Array(23).fill(true); // For 22 columns
+let sortDirections = Array(23).fill(true); // For 23 columns
 let globalData = {}; 
 let currentPage = 1;
 
@@ -161,12 +161,15 @@ function displayDataInTable(data) {
             newRow.insertCell().appendChild(document.createTextNode(formatNumber(weekData.summary.podatek_do_zaplaty)));
             newRow.insertCell().appendChild(document.createTextNode(formatNumber(weekData.summary.total)));
             newRow.insertCell().appendChild(document.createTextNode(weekData.summary.status || "N/A"));
+
+            // Добавляем ячейку для кнопки 'Szczegóły'
             const detailButtonCell = newRow.insertCell();
             const detailButton = document.createElement('button');
             detailButton.textContent = 'Szczegóły';
             detailButton.dataset.driverId = driverId;
             detailButton.addEventListener('click', showDetailsModal);
             detailButtonCell.appendChild(detailButton);
+
             for (let i = 0; i < newRow.cells.length; i++) {
                 newRow.cells[i].classList.add('data-fade');
             }
@@ -211,15 +214,14 @@ function paginateData(data) {
             newRow.insertCell().appendChild(document.createTextNode(formatNumber(weekData.summary.podatek_do_zaplaty)));
             newRow.insertCell().appendChild(document.createTextNode(formatNumber(weekData.summary.total)));
             newRow.insertCell().appendChild(document.createTextNode(weekData.summary.status || "N/A"));
+
+            // Добавляем ячейку для кнопки 'Szczegóły'
             const detailButtonCell = newRow.insertCell();
             const detailButton = document.createElement('button');
             detailButton.textContent = 'Szczegóły';
             detailButton.dataset.driverId = driverId;
             detailButton.addEventListener('click', showDetailsModal);
             detailButtonCell.appendChild(detailButton);
-            for (let i = 0; i < newRow.cells.length; i++) {
-                newRow.cells[i].classList.add('data-fade');
-            }
         }
     }
 }
@@ -340,3 +342,4 @@ function hideZeroKursy() {
         }
     }
 }
+
