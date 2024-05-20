@@ -110,24 +110,41 @@ document.getElementById('type-select').addEventListener('change', function () {
  function updateWeekInfo(dateFrom, dateTo) {
      document.getElementById('week-info').textContent = `Displaying data for the week: ${dateFrom} to ${dateTo}`;
  }
- let invoicesData = [];  // Глобальный массив для хранения данных о фактурах
 function loadAndDisplayData(dateFrom, dateTo) {
-    const apiUrl = `https://us-central1-ccmcolorpartner.cloudfunctions.net/getDriversInvoicesForDateRange?dateFrom=${dateFrom}&dateTo=${dateTo}`;
+    const dateFromObj = new Date(dateFrom);
+    const dateToObj = new Date(dateTo);
+
+    // Получение ссылок на базу данных Firebase
+    const realtimeDb = firebase.database().ref('/drivers');
     
-    fetch(apiUrl)
-        .then(response => {
-            if (!response.ok) {
-                throw new Error('Network response was not ok');
+    dbRef.once('value')
+        .then((snapshot) => {
+            const drivers = snapshot.val();
+            let filteredInvoices = {};
+
+            for (let driverId in drivers) {
+                const driverData = drivers[driverId];
+                if (driverData.invoices) {
+                    for (let invoiceId in driverData.invoices) {
+                        const invoice = driverData.invoices[invoiceId];
+                        const invoiceDateObj = new Date(invoice.purchaseDate);
+
+                        // Проверяем, попадает ли дата инвойса в заданный диапазон
+                        if (invoiceDateObj >= dateFromObj && invoiceDateObj <= dateToObj) {
+                            if (!filteredInvoices[driverId]) {
+                                filteredInvoices[driverId] = {};
+                            }
+                            filteredInvoices[driverId][invoiceId] = invoice;
+                        }
+                    }
+                }
             }
-            return response.json();
-        })
-        .then(data => {
-            console.log("Received data:", data); // Добавлено для отладки
-              console.log("loadAndDisplayData: updating globalData");
-            invoicesData = data;
+
+            console.log("Received data:", filteredInvoices); // Добавлено для отладки
+            invoicesData = filteredInvoices;
             displayInvoicesInTable(invoicesData);
         })
-        .catch(error => {
+        .catch((error) => {
             console.error('Error fetching invoices data: ', error);
         });
 }
