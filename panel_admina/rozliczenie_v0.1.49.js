@@ -1,4 +1,4 @@
-let rowsPerPage = 15;
+let rowsPerPage = 300;
 let sortDirections = Array(23).fill(true); // For 23 columns
 let globalData = {}; 
 let currentPage = 1;
