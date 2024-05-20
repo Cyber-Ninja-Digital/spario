@@ -1,5 +1,8 @@
-  let rowsPerPage = 15;
-let sortDirections = Array(23).fill(true);  // For 22 columns
+let rowsPerPage = 15;
+let sortDirections = Array(23).fill(true); // For 22 columns
+let globalData = {}; 
+let currentPage = 1;
+
 document.addEventListener('DOMContentLoaded', function () {
     loadAndDisplayData();
     document.getElementById('week-select').addEventListener('change', function() {
@@ -14,109 +17,90 @@ document.addEventListener('DOMContentLoaded', function () {
     document.getElementById('city-select').addEventListener('change', function () {
         filterData();
     });
-        document.getElementById('rows-per-page').addEventListener('change', function() {
-            console.log('Rows per page changed:', this.value);  // Добавьте эту строку
-
+    document.getElementById('rows-per-page').addEventListener('change', function() {
         rowsPerPage = parseInt(this.value);
-        console.log('Updated rowsPerPage:', rowsPerPage);  // Добавьте эту строку
-
-        paginateData(globalData);  // Перерисовка таблицы с новым значением rowsPerPage
+        paginateData(globalData);
         document.getElementById('total-pages').textContent = Math.ceil(Object.keys(globalData).length / rowsPerPage);
-        // Обновление номера текущей страницы
         currentPage = 1;
         updateCurrentPage();
     });
-    function filterData() {
-        const searchValue = document.getElementById('search').value.toLowerCase();
-        const selectedCity = document.getElementById('city-select').value;
-        const filteredData = Object.fromEntries(
-            Object.entries(globalData).filter(([driverId, driverData]) => {
-                const weekData = driverData.weeks?.[Object.keys(driverData.weeks)[0]];
-                return (
-                    driverId.toLowerCase().includes(searchValue) &&
-                    (selectedCity === "all" || weekData?.summary?.city === selectedCity)
-                );
-            })
-        );
-        paginateData(filteredData);
-        document.getElementById('total-pages').textContent = Math.ceil(Object.keys(filteredData).length / rowsPerPage);
-        updateCurrentPage();
-    }
-        // Event listener for hiding drivers with kursy = 0
-        document.getElementById('hide-zero-kursy').addEventListener('click', hideZeroKursy);
-
-        // Event listeners for sorting table when column headers are clicked
-        let headers = document.querySelectorAll("#data-table th");
-        headers.forEach((header, index) => {
-            header.addEventListener('click', () => sortTable(index));
-        });
+    
+    document.getElementById('hide-zero-kursy').addEventListener('click', hideZeroKursy);
+    
+    let headers = document.querySelectorAll("#data-table th");
+    headers.forEach((header, index) => {
+        header.addEventListener('click', () => sortTable(index));
+    });
 });
 
-
-let globalData = null; 
-let currentWeekNumber; 
-function loadAndDisplayData() {
+async function loadAndDisplayData() {
     showSkeletonLoader();
-    // Загрузите доступные недели
-    fetch('https://us-central1-ccmcolorpartner.cloudfunctions.net/getAvailableWeeks')
-    .then(response => response.json())
-.then(weeks => {
-    // Сортируем недели в порядке убывания
-    weeks.sort((a, b) => {
-        const [weekA, yearA] = a.split('-').map(Number);
-        const [weekB, yearB] = b.split('-').map(Number);
-        return yearB - yearA || weekB - weekA;
-    });
-
-    // Обновление списка недель в user interface (UI)
+    const weeks = await getAvailableWeeks();
     const select = document.getElementById('week-select');
     select.innerHTML = weeks.map(week => `<option value="${week}">${week}</option>`);
-
-    // Загрузите данные для последней недели в списке
     const latestWeek = weeks[0];
     select.value = latestWeek;
     loadAndDisplayWeekData(latestWeek);
     updateWeekInfo(latestWeek);
-})
 }
+
+async function getAvailableWeeks() {
+    try {
+        const snapshot = await firebase.database().ref('/drivers').once('value');
+        const drivers = snapshot.val();
+        let weeks = {};
+
+        for (let driverId in drivers) {
+            const driverData = drivers[driverId];
+            for (let week in driverData.weeks) {
+                weeks[week] = true;
+            }
+        }
+        return Object.keys(weeks).sort().reverse();
+    } catch (error) {
+        console.error('Error fetching weeks: ', error);
+        return [];
+    }
+}
+
 function updateWeekInfo(week) {
     document.getElementById('week-info').textContent = `Wyświetlanie danych za tydzień: ${week}`;
 }
-// Глобальная переменная для хранения номера недели
-function loadAndDisplayWeekData(week) {
-      const apiUrl = `https://us-central1-ccmcolorpartner.cloudfunctions.net/getDriversDataForWeek?weekNumber=${week}`;
-    console.log(`Loading data for week: ${week}`);
 
-    currentWeekNumber = week; // Сохраняем номер недели в глобальную переменную
-    console.log(`Loading data for the week from: (Week numbers: ${week})`);
-    
-    fetch(apiUrl)
-        .then(response => {
-            if (!response.ok) {
-                throw new Error('Network response was not ok');
-            }
-            return response.json();
-        })
-        .then(data => {
-            console.log(data);
-            globalData = data; 
-            displayDataInTable(data);
+async function loadAndDisplayWeekData(week) {
+    try {
+        const snapshot = await firebase.database().ref('/drivers').once('value');
+        const drivers = snapshot.val();
+        let weekData = {};
 
-            // Update button state, text, and style based on data
-            const isAnyDriverAwaiting = checkIfAnyDriverAwaitingApproval(data);
-            const button = document.getElementById('update-summary-status');
-            button.disabled = !isAnyDriverAwaiting;
-            if (isAnyDriverAwaiting) {
-                button.classList.remove('button-disabled'); // Удалите класс для активной кнопки
-            } else {
-                button.classList.add('button-disabled'); // Добавьте класс для неактивной кнопки
+        for (let driverId in drivers) {
+            const driverData = drivers[driverId];
+            const driverWeekData = driverData.weeks?.[week];
+            if (driverWeekData) {
+                weekData[driverId] = {
+                    balance: driverData.balance,
+                    weeks: {
+                        [week]: driverWeekData
+                    }
+                };
             }
-        })
-        .catch(error => {
-            console.error('Error fetching data: ', error);
-        });
+        }
+
+        globalData = weekData;
+        displayDataInTable(globalData);
+
+        const isAnyDriverAwaiting = checkIfAnyDriverAwaitingApproval(globalData);
+        const button = document.getElementById('update-summary-status');
+        button.disabled = !isAnyDriverAwaiting;
+        if (isAnyDriverAwaiting) {
+            button.classList.remove('button-disabled');
+        } else {
+            button.classList.add('button-disabled');
+        }
+    } catch (error) {
+        console.error('Error fetching data: ', error);
+    }
 }
-
 
 function checkIfAnyDriverAwaitingApproval(data) {
     for (const [driverId, driverData] of Object.entries(data)) {
@@ -129,14 +113,12 @@ function checkIfAnyDriverAwaitingApproval(data) {
 }
 
 function formatNumber(value) {
-    // Пробуем преобразовать строку в число
     if (typeof value === 'string') {
         const numValue = parseFloat(value);
         if (!isNaN(numValue)) {
             value = numValue;
         }
     }
-    
     if (typeof value === 'number') {
         return value.toFixed(2);
     } else if (value === null || value === undefined || value === "") {
@@ -146,18 +128,17 @@ function formatNumber(value) {
     }
 }
 
-
 function displayDataInTable(data) {
     const tableBody = document.getElementById('data-table').getElementsByTagName('tbody')[0];
     tableBody.innerHTML = "";
     const cities = [...new Set(Object.values(data).map(driverData => driverData.weeks[Object.keys(driverData.weeks)[0]]?.summary?.city))];
     const citySelect = document.getElementById('city-select');
     citySelect.innerHTML = `<option value="all">All</option>` + cities.map(city => `<option value="${city}">${city}</option>`).join('');
+
     for (const [driverId, driverData] of Object.entries(data)) {
-        const weekData = driverData.weeks?.[Object.keys(driverData.weeks)[0]]; 
+        const weekData = driverData.weeks?.[Object.keys(driverData.weeks)[0]];
         if (weekData && weekData.summary) {
             const newRow = tableBody.insertRow();
-            // Add data to the new row
             newRow.insertCell().appendChild(document.createTextNode(driverId));
             newRow.insertCell().appendChild(document.createTextNode(weekData.summary.city || "N/A"));
             newRow.insertCell().appendChild(document.createTextNode(formatNumber(weekData.summary.kursy)));
@@ -180,32 +161,32 @@ function displayDataInTable(data) {
             newRow.insertCell().appendChild(document.createTextNode(formatNumber(weekData.summary.podatek_do_zaplaty)));
             newRow.insertCell().appendChild(document.createTextNode(formatNumber(weekData.summary.total)));
             newRow.insertCell().appendChild(document.createTextNode(weekData.summary.status || "N/A"));
-            // Добавляем ячейку для кнопки 'Szczegóły'
             const detailButtonCell = newRow.insertCell();
             const detailButton = document.createElement('button');
             detailButton.textContent = 'Szczegóły';
-            detailButton.dataset.driverId = driverId; // Сохраняем идентификатор в атрибуте данных
+            detailButton.dataset.driverId = driverId;
             detailButton.addEventListener('click', showDetailsModal);
             detailButtonCell.appendChild(detailButton);
-                        for (let i = 0; i < newRow.cells.length; i++) {
+            for (let i = 0; i < newRow.cells.length; i++) {
                 newRow.cells[i].classList.add('data-fade');
             }
         }
     }
-        document.getElementById('total-pages').textContent = Math.ceil(Object.keys(data).length / rowsPerPage);
+    document.getElementById('total-pages').textContent = Math.ceil(Object.keys(data).length / rowsPerPage);
     paginateData(data);
 }
-let currentPage = 1;
-function paginateData(data) {
-    console.log('Paginating data with', rowsPerPage, 'rows per page');  // Добавьте эту строку
 
+function paginateData(data) {
     const tableBody = document.getElementById('data-table').getElementsByTagName('tbody')[0];
     tableBody.innerHTML = "";
-    const startIndex = (currentPage - 1) * rowsPerPage;
-    const endIndex = startIndex + rowsPerPage;
-    const paginatedData = Object.entries(data).slice(startIndex, endIndex);
-    for (const [driverId, driverData] of paginatedData) {
-        const weekData = driverData.weeks?.[Object.keys(driverData.weeks)[0]]; 
+    const keys = Object.keys(data);
+    const start = (currentPage - 1) * rowsPerPage;
+    const end = start + rowsPerPage;
+
+    for (let i = start; i < end && i < keys.length; i++) {
+        const driverId = keys[i];
+        const driverData = data[driverId];
+        const weekData = driverData.weeks?.[Object.keys(driverData.weeks)[0]];
         if (weekData && weekData.summary) {
             const newRow = tableBody.insertRow();
             newRow.insertCell().appendChild(document.createTextNode(driverId));
@@ -230,107 +211,132 @@ function paginateData(data) {
             newRow.insertCell().appendChild(document.createTextNode(formatNumber(weekData.summary.podatek_do_zaplaty)));
             newRow.insertCell().appendChild(document.createTextNode(formatNumber(weekData.summary.total)));
             newRow.insertCell().appendChild(document.createTextNode(weekData.summary.status || "N/A"));
-          // Добавляем ячейку для кнопки 'Szczegóły'
             const detailButtonCell = newRow.insertCell();
             const detailButton = document.createElement('button');
             detailButton.textContent = 'Szczegóły';
-            detailButton.dataset.driverId = driverId; // Сохраняем идентификатор в атрибуте данных
+            detailButton.dataset.driverId = driverId;
             detailButton.addEventListener('click', showDetailsModal);
             detailButtonCell.appendChild(detailButton);
-
+            for (let i = 0; i < newRow.cells.length; i++) {
+                newRow.cells[i].classList.add('data-fade');
+            }
         }
     }
 }
-function nextPage() {
-    if (currentPage < Math.ceil(Object.keys(globalData).length / rowsPerPage)) {
-        currentPage++;
-        paginateData(globalData);
-        updateCurrentPage();
-    }
-}
-function prevPage() {
-    if (currentPage > 1) {
-        currentPage--;
-        paginateData(globalData);
-        updateCurrentPage();
-    }
-}
-function updateCurrentPage() {
-    console.log('Updating current page to', currentPage);  // Добавьте эту строку
 
-    document.getElementById('current-page').textContent = currentPage;
-}
-function showSkeletonLoader(rows = 17, columns = 23) {
+function showSkeletonLoader() {
     const tableBody = document.getElementById('data-table').getElementsByTagName('tbody')[0];
     tableBody.innerHTML = "";
+    const rows = 10;
+    const cols = 23;
     for (let i = 0; i < rows; i++) {
         const newRow = tableBody.insertRow();
-        for (let j = 0; j < columns; j++) {
+        for (let j = 0; j < cols; j++) {
             const newCell = newRow.insertCell();
-            const textNode = document.createElement('div');
-            textNode.className = 'skeleton';
-            textNode.style.height = '20px'; // You can adjust this
-            textNode.style.width = '100%';
-            newCell.appendChild(textNode);
+            newCell.classList.add('skeleton');
         }
     }
 }
-function hideZeroKursy() {
-    filterZeroKursy();
-    paginateData(globalData);
-    document.getElementById('total-pages').textContent = Math.ceil(Object.keys(globalData).length / rowsPerPage);
-    currentPage = 1;  // Reset to first page after filtering
-    updateCurrentPage();
-}
 
-function filterZeroKursy() {
-    globalData = Object.fromEntries(
-        Object.entries(globalData).filter(([driverId, driverData]) => {
-            const weekData = driverData.weeks?.[Object.keys(driverData.weeks)[0]];
-            return weekData?.summary?.kursy !== 0;
-        })
-    );
+function filterData() {
+    const searchQuery = document.getElementById('search').value.toLowerCase();
+    const selectedCity = document.getElementById('city-select').value;
+    const filteredData = {};
+    for (const [driverId, driverData] of Object.entries(globalData)) {
+        const weekData = driverData.weeks?.[Object.keys(driverData.weeks)[0]];
+        if (weekData && weekData.summary) {
+            const city = weekData.summary.city || "";
+            if (
+                (driverId.toLowerCase().includes(searchQuery) || city.toLowerCase().includes(searchQuery)) &&
+                (selectedCity === "all" || city === selectedCity)
+            ) {
+                filteredData[driverId] = driverData;
+            }
+        }
+    }
+    displayDataInTable(filteredData);
 }
 
 function sortTable(columnIndex) {
-    const tableBody = document.getElementById('data-table').getElementsByTagName('tbody')[0];
-    let rows = Array.from(tableBody.getElementsByTagName('tr'));
-    const isAscending = sortDirections[columnIndex];
-    
-    rows.sort((a, b) => {
-        let cellA = a.cells[columnIndex].innerText;
-        let cellB = b.cells[columnIndex].innerText;
+    const sortedData = Object.entries(globalData).sort((a, b) => {
+        const aData = getColumnData(a[1], columnIndex);
+        const bData = getColumnData(b[1], columnIndex);
 
-        if (!isNaN(cellA) && !isNaN(cellB)) {  // If it's a number
-            cellA = parseFloat(cellA);
-            cellB = parseFloat(cellB);
+        if (aData < bData) {
+            return sortDirections[columnIndex] ? -1 : 1;
+        } else if (aData > bData) {
+            return sortDirections[columnIndex] ? 1 : -1;
+        } else {
+            return 0;
         }
-
-        if (cellA < cellB) return isAscending ? -1 : 1;
-        if (cellA > cellB) return isAscending ? 1 : -1;
-        return 0;
     });
 
-    // Update the direction for the next time the column is clicked
-    sortDirections[columnIndex] = !isAscending;
+    globalData = Object.fromEntries(sortedData);
+    sortDirections[columnIndex] = !sortDirections[columnIndex];
+    displayDataInTable(globalData);
+}
 
-    // Append the sorted rows to the table body
-    tableBody.innerHTML = "";
-    for (let row of rows) {
-        tableBody.appendChild(row);
+function getColumnData(driverData, columnIndex) {
+    const weekData = driverData.weeks?.[Object.keys(driverData.weeks)[0]];
+    if (!weekData || !weekData.summary) {
+        return "";
+    }
+    const summary = weekData.summary;
+    switch (columnIndex) {
+        case 0: return driverData.driverId;
+        case 1: return summary.city || "";
+        case 2: return summary.kursy;
+        case 3: return summary.przychod_dodatkowy;
+        case 4: return summary.commission;
+        case 5: return summary.gotowka;
+        case 6: return summary.partner;
+        case 7: return summary.service.join(", ") || "";
+        case 8: return summary.vat_bonus;
+        case 9: return summary.vat_dodatkowy;
+        case 10: return summary.vat_przejazdy;
+        case 11: return summary.wynajem;
+        case 12: return summary.zus;
+        case 13: return summary.koztyUZ;
+        case 14: return summary.inne;
+        case 15: return summary.bonusPartnera;
+        case 16: return summary.umowa_najmu;
+        case 17: return summary.roznica;
+        case 18: return summary.zwrot_kosztow;
+        case 19: return summary.podatek_do_zaplaty;
+        case 20: return summary.total;
+        case 21: return summary.status || "";
+        default: return "";
     }
 }
 
+function updateCurrentPage() {
+    document.getElementById('current-page').textContent = currentPage;
+    paginateData(globalData);
+}
 
+document.getElementById('prev-page').addEventListener('click', function() {
+    if (currentPage > 1) {
+        currentPage--;
+        updateCurrentPage();
+    }
+});
 
+document.getElementById('next-page').addEventListener('click', function() {
+    const totalPages = Math.ceil(Object.keys(globalData).length / rowsPerPage);
+    if (currentPage < totalPages) {
+        currentPage++;
+        updateCurrentPage();
+    }
+});
 
+function hideZeroKursy() {
+    const tableBody = document.getElementById('data-table').getElementsByTagName('tbody')[0];
+    const rows = tableBody.getElementsByTagName('tr');
 
-
-
-
-
-
-function setLastWeekDates() {
-    const [dateFrom, dateTo] = getLastWeekDates();
-    document.querySelector('#date-control input[type="text"]').value = `${dateFrom} - ${dateTo}`;
+    for (let i = 0; i < rows.length; i++) {
+        const kursyCell = rows[i].getElementsByTagName('td')[2];
+        if (kursyCell && parseFloat(kursyCell.textContent) === 0) {
+            rows[i].style.display = 'none';
+        }
+    }
 }
