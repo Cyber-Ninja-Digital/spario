@@ -117,7 +117,7 @@ function loadAndDisplayData(dateFrom, dateTo) {
     // Получение ссылок на базу данных Firebase
     const realtimeDb = firebase.database().ref('/drivers');
     
-    dbRef.once('value')
+    realtimeDb.once('value')
         .then((snapshot) => {
             const drivers = snapshot.val();
             let filteredInvoices = {};
