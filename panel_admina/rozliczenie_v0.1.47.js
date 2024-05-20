@@ -2,6 +2,7 @@ let rowsPerPage = 15;
 let sortDirections = Array(23).fill(true); // For 23 columns
 let globalData = {}; 
 let currentPage = 1;
+let currentWeekNumber = null; // Добавляем переменную currentWeekNumber
 
 document.addEventListener('DOMContentLoaded', function () {
     loadAndDisplayData();
@@ -87,6 +88,7 @@ async function loadAndDisplayWeekData(week) {
         }
 
         globalData = weekData;
+        currentWeekNumber = week; // Сохраняем текущий номер недели
         displayDataInTable(globalData);
 
         const isAnyDriverAwaiting = checkIfAnyDriverAwaitingApproval(globalData);
@@ -342,4 +344,3 @@ function hideZeroKursy() {
         }
     }
 }
-
