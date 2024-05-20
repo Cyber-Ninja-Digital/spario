@@ -46,6 +46,11 @@ document.addEventListener('DOMContentLoaded', function () {
     });
 });
 
+function setLastWeekDates() {
+    const [dateFrom, dateTo] = getLastWeekDates();
+    document.querySelector('#date-control input[type="text"]').value = `${dateFrom} - ${dateTo}`;
+}
+
 function filterData() {
     const searchValue = document.getElementById('search').value.toLowerCase();
     const selectedStatus = document.getElementById('status-select').value;
@@ -225,7 +230,7 @@ function paginateData(data) {
         const cellRejectionComment = row.insertCell();
         const cellStatusSprawdzenia = row.insertCell();
 
-        cellDriverId.textContent = invoice.driverName || "N/A";
+        cellDriverId.textContent = invoice.driverName;
         cellInvoiceNumber.textContent = invoice.numerfaktury;
         cellPurchaseDate.textContent = invoice.purchaseDate;
         cellType.textContent = invoice.type;
@@ -318,3 +323,4 @@ function updateCurrentPage() {
         paginationInfoElement.textContent = `Displaying ${tableBody.rows.length} of ${filteredData.length} records`;
     }
 }
+
