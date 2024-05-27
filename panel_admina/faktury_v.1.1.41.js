@@ -251,8 +251,8 @@ function paginateData(data) {
         // Change status button with dropdown
         const changeStatusSelect = document.createElement('select');
         changeStatusSelect.innerHTML = `
-            <option value="Zaakceptowany">Zaakceptowany</option>
-            <option value="Odrzucony">Odrzucony</option>
+            <option value="zaakceptowany">zaakceptowany</option>
+            <option value="odrzucony">odrzucony</option>
         `;
         changeStatusSelect.value = invoice.status; // set current status as selected
         changeStatusSelect.addEventListener('change', function () {
