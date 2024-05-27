@@ -244,7 +244,7 @@ function paginateData(data) {
         cellVatAmount.textContent = invoice.vatAmount;
         cellVatReturn.textContent = invoice.vatreturn;
         cellStatus.textContent = invoice.status;
-        cellFilePreview.innerHTML = invoice.fileUrl ? `<a href="${invoice.fileURL}" target="_blank">Podgląd</a>` : "Brak";
+        cellFilePreview.innerHTML = invoice.fileURL ? `<a href="${invoice.fileURL}" target="_blank">Podgląd</a>` : "Brak";
         cellRejectionComment.textContent = invoice.rejectionComment;
         cellStatusSprawdzenia.textContent = invoice.statusSprawdzenia || "N/A";
 
@@ -313,14 +313,31 @@ function sortTable(columnIndex) {
 }
 
 function updateCurrentPage() {
-    const tableBody = document.getElementById('data-table').getElementsByTagName('tbody')[0];
     const currentPageElement = document.getElementById('current-page');
     const paginationInfoElement = document.getElementById('pagination-info');
+    const tableBody = document.getElementById('data-table').getElementsByTagName('tbody')[0];
+
     if (currentPageElement) {
         currentPageElement.textContent = currentPage;
     }
+
+    const totalPages = Math.ceil(filteredData.length / rowsPerPage);
+    const totalPagesElement = document.getElementById('total-pages');
+    if (totalPagesElement) {
+        totalPagesElement.textContent = totalPages;
+    }
+
     if (paginationInfoElement) {
         paginationInfoElement.textContent = `Displaying ${tableBody.rows.length} of ${filteredData.length} records`;
     }
 }
+
+document.getElementById('next-page').addEventListener('click', function () {
+    const totalPages = Math.ceil(filteredData.length / rowsPerPage);
+    if (currentPage < totalPages) {
+        currentPage++;
+        paginateData(filteredData);
+        updateCurrentPage();
+    }
+});
 
