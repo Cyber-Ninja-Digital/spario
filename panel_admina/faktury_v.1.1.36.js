@@ -313,31 +313,30 @@ function sortTable(columnIndex) {
 }
 
 function updateCurrentPage() {
+    const tableBody = document.getElementById('data-table').getElementsByTagName('tbody')[0];
     const currentPageElement = document.getElementById('current-page');
     const paginationInfoElement = document.getElementById('pagination-info');
-    const tableBody = document.getElementById('data-table').getElementsByTagName('tbody')[0];
-
     if (currentPageElement) {
         currentPageElement.textContent = currentPage;
     }
-
-    const totalPages = Math.ceil(filteredData.length / rowsPerPage);
-    const totalPagesElement = document.getElementById('total-pages');
-    if (totalPagesElement) {
-        totalPagesElement.textContent = totalPages;
-    }
-
     if (paginationInfoElement) {
         paginationInfoElement.textContent = `Displaying ${tableBody.rows.length} of ${filteredData.length} records`;
     }
 }
-
-document.getElementById('next-page').addEventListener('click', function () {
+function nextPage() {
     const totalPages = Math.ceil(filteredData.length / rowsPerPage);
     if (currentPage < totalPages) {
         currentPage++;
         paginateData(filteredData);
         updateCurrentPage();
     }
-});
+}
+
+function prevPage() {
+    if (currentPage > 1) {
+        currentPage--;
+        paginateData(filteredData);
+        updateCurrentPage();
+    }
+}
 
