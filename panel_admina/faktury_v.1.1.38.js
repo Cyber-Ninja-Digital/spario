@@ -86,6 +86,7 @@ function filterData() {
 }
 
 
+
 function updateWeekInfo(dateFrom, dateTo) {
     const weekNumberFrom = getWeekNumber(new Date(dateFrom));
     const weekNumberTo = getWeekNumber(new Date(dateTo));
@@ -117,7 +118,7 @@ function loadAndDisplayData(dateFrom, dateTo) {
     realtimeDb.once('value')
         .then((snapshot) => {
             const drivers = snapshot.val();
-            let filteredInvoices = {};
+            let filteredInvoices = [];
 
             for (let driverId in drivers) {
                 const driverData = drivers[driverId];
@@ -127,26 +128,27 @@ function loadAndDisplayData(dateFrom, dateTo) {
                         const invoiceDateObj = new Date(invoice.purchaseDate);
 
                         if (invoiceDateObj >= dateFromObj && invoiceDateObj <= dateToObj) {
-                            if (!filteredInvoices[driverId]) {
-                                filteredInvoices[driverId] = {};
-                            }
-                            filteredInvoices[driverId][invoiceId] = invoice;
+                            invoice.driverName = driverData.name; // Assuming driver name is stored in driverData.name
+                            invoice.invoiceId = invoiceId;
+                            filteredInvoices.push(invoice);
                         }
                     }
                 }
             }
 
-            invoicesData = filteredInvoices;
-            const invoicesArray = Object.values(filteredInvoices).flatMap(driverInvoices => Object.values(driverInvoices));
-            globalData = invoicesArray;
-            filteredData = invoicesArray; // Initialize filteredData here
+            globalData = filteredInvoices;
+            filteredData = filteredInvoices; // Initialize filteredData here
 
-            displayInvoicesInTable(invoicesArray);
+            displayInvoicesInTable(filteredInvoices);
+            document.getElementById('total-pages').textContent = Math.ceil(filteredInvoices.length / rowsPerPage);
+            currentPage = 1;
+            updateCurrentPage();
         })
         .catch((error) => {
             console.error('Error fetching invoices data: ', error);
         });
 }
+
 
 function updateStatusOptions(statuses) {
     const statusSelect = document.getElementById('status-select');
@@ -253,7 +255,6 @@ function paginateData(data) {
         cellRejectionComment.textContent = invoice.rejectionComment;
         cellStatusSprawdzenia.textContent = invoice.statusSprawdzenia || "N/A";
 
-        // Change status button with dropdown
         const changeStatusSelect = document.createElement('select');
         changeStatusSelect.innerHTML = `
             <option value="Zaakceptowany">Zaakceptowany</option>
@@ -270,6 +271,25 @@ function paginateData(data) {
     }
     updateCurrentPage();
 }
+
+function updateCurrentPage() {
+    const currentPageElement = document.getElementById('current-page');
+    const totalPagesElement = document.getElementById('total-pages');
+    const paginationInfoElement = document.getElementById('pagination-info');
+    const totalPages = Math.ceil(filteredData.length / rowsPerPage);
+    
+    if (currentPageElement) {
+        currentPageElement.textContent = currentPage;
+    }
+    if (totalPagesElement) {
+        totalPagesElement.textContent = totalPages;
+    }
+    if (paginationInfoElement) {
+        const tableBody = document.getElementById('data-table').getElementsByTagName('tbody')[0];
+        paginationInfoElement.textContent = `Displaying ${tableBody.rows.length} of ${filteredData.length} records`;
+    }
+}
+
 
 function updateInvoiceStatus(driverName, invoiceId, newStatus) {
     const refPath = `/drivers/${driverName}/invoices/${invoiceId}/status`;
