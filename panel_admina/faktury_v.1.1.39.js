@@ -1,4 +1,4 @@
-let rowsPerPage = 400;
+let rowsPerPage = 800;
 let globalData; // Исходные данные
 let filteredData; // Отфильтрованные данные
 let sortDirections = Array(18).fill(true); // For 18 columns
