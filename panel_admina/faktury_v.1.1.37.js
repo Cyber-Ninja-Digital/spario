@@ -85,6 +85,7 @@ function filterData() {
     updateCurrentPage();
 }
 
+
 function updateWeekInfo(dateFrom, dateTo) {
     const weekNumberFrom = getWeekNumber(new Date(dateFrom));
     const weekNumberTo = getWeekNumber(new Date(dateTo));
@@ -136,7 +137,11 @@ function loadAndDisplayData(dateFrom, dateTo) {
             }
 
             invoicesData = filteredInvoices;
-            displayInvoicesInTable(invoicesData);
+            const invoicesArray = Object.values(filteredInvoices).flatMap(driverInvoices => Object.values(driverInvoices));
+            globalData = invoicesArray;
+            filteredData = invoicesArray; // Initialize filteredData here
+
+            displayInvoicesInTable(invoicesArray);
         })
         .catch((error) => {
             console.error('Error fetching invoices data: ', error);
@@ -324,6 +329,9 @@ function updateCurrentPage() {
     }
 }
 function nextPage() {
+    if (!filteredData || filteredData.length === 0) {
+        return;
+    }
     const totalPages = Math.ceil(filteredData.length / rowsPerPage);
     if (currentPage < totalPages) {
         currentPage++;
@@ -333,10 +341,14 @@ function nextPage() {
 }
 
 function prevPage() {
+    if (!filteredData || filteredData.length === 0) {
+        return;
+    }
     if (currentPage > 1) {
         currentPage--;
         paginateData(filteredData);
         updateCurrentPage();
     }
 }
+
 
