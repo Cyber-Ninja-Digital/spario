@@ -1,4 +1,4 @@
-let rowsPerPage = 15;
+let rowsPerPage = 400;
 let globalData; // Исходные данные
 let filteredData; // Отфильтрованные данные
 let sortDirections = Array(18).fill(true); // For 18 columns
@@ -85,8 +85,6 @@ function filterData() {
     updateCurrentPage();
 }
 
-
-
 function updateWeekInfo(dateFrom, dateTo) {
     const weekNumberFrom = getWeekNumber(new Date(dateFrom));
     const weekNumberTo = getWeekNumber(new Date(dateTo));
@@ -118,7 +116,7 @@ function loadAndDisplayData(dateFrom, dateTo) {
     realtimeDb.once('value')
         .then((snapshot) => {
             const drivers = snapshot.val();
-            let filteredInvoices = [];
+            let filteredInvoices = {};
 
             for (let driverId in drivers) {
                 const driverData = drivers[driverId];
@@ -128,27 +126,22 @@ function loadAndDisplayData(dateFrom, dateTo) {
                         const invoiceDateObj = new Date(invoice.purchaseDate);
 
                         if (invoiceDateObj >= dateFromObj && invoiceDateObj <= dateToObj) {
-                            invoice.driverName = driverData.name; // Assuming driver name is stored in driverData.name
-                            invoice.invoiceId = invoiceId;
-                            filteredInvoices.push(invoice);
+                            if (!filteredInvoices[driverId]) {
+                                filteredInvoices[driverId] = {};
+                            }
+                            filteredInvoices[driverId][invoiceId] = invoice;
                         }
                     }
                 }
             }
 
-            globalData = filteredInvoices;
-            filteredData = filteredInvoices; // Initialize filteredData here
-
-            displayInvoicesInTable(filteredInvoices);
-            document.getElementById('total-pages').textContent = Math.ceil(filteredInvoices.length / rowsPerPage);
-            currentPage = 1;
-            updateCurrentPage();
+            invoicesData = filteredInvoices;
+            displayInvoicesInTable(invoicesData);
         })
         .catch((error) => {
             console.error('Error fetching invoices data: ', error);
         });
 }
-
 
 function updateStatusOptions(statuses) {
     const statusSelect = document.getElementById('status-select');
@@ -255,6 +248,7 @@ function paginateData(data) {
         cellRejectionComment.textContent = invoice.rejectionComment;
         cellStatusSprawdzenia.textContent = invoice.statusSprawdzenia || "N/A";
 
+        // Change status button with dropdown
         const changeStatusSelect = document.createElement('select');
         changeStatusSelect.innerHTML = `
             <option value="Zaakceptowany">Zaakceptowany</option>
@@ -271,25 +265,6 @@ function paginateData(data) {
     }
     updateCurrentPage();
 }
-
-function updateCurrentPage() {
-    const currentPageElement = document.getElementById('current-page');
-    const totalPagesElement = document.getElementById('total-pages');
-    const paginationInfoElement = document.getElementById('pagination-info');
-    const totalPages = Math.ceil(filteredData.length / rowsPerPage);
-    
-    if (currentPageElement) {
-        currentPageElement.textContent = currentPage;
-    }
-    if (totalPagesElement) {
-        totalPagesElement.textContent = totalPages;
-    }
-    if (paginationInfoElement) {
-        const tableBody = document.getElementById('data-table').getElementsByTagName('tbody')[0];
-        paginationInfoElement.textContent = `Displaying ${tableBody.rows.length} of ${filteredData.length} records`;
-    }
-}
-
 
 function updateInvoiceStatus(driverName, invoiceId, newStatus) {
     const refPath = `/drivers/${driverName}/invoices/${invoiceId}/status`;
@@ -348,27 +323,4 @@ function updateCurrentPage() {
         paginationInfoElement.textContent = `Displaying ${tableBody.rows.length} of ${filteredData.length} records`;
     }
 }
-function nextPage() {
-    if (!filteredData || filteredData.length === 0) {
-        return;
-    }
-    const totalPages = Math.ceil(filteredData.length / rowsPerPage);
-    if (currentPage < totalPages) {
-        currentPage++;
-        paginateData(filteredData);
-        updateCurrentPage();
-    }
-}
-
-function prevPage() {
-    if (!filteredData || filteredData.length === 0) {
-        return;
-    }
-    if (currentPage > 1) {
-        currentPage--;
-        paginateData(filteredData);
-        updateCurrentPage();
-    }
-}
-
 
