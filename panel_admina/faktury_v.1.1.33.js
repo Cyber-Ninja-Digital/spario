@@ -244,7 +244,7 @@ function paginateData(data) {
         cellVatAmount.textContent = invoice.vatAmount;
         cellVatReturn.textContent = invoice.vatreturn;
         cellStatus.textContent = invoice.status;
-        cellFilePreview.innerHTML = invoice.fileUrl ? `<a href="${invoice.fileUrl}" target="_blank">Podgląd</a>` : "Brak";
+        cellFilePreview.innerHTML = invoice.fileUrl ? `<a href="${invoice.fileURL}" target="_blank">Podgląd</a>` : "Brak";
         cellRejectionComment.textContent = invoice.rejectionComment;
         cellStatusSprawdzenia.textContent = invoice.statusSprawdzenia || "N/A";
 
