@@ -322,13 +322,18 @@ function sortTable(columnIndex) {
 
 
 function parseDate(dateStr) {
+    console.log('Parsing date:', dateStr); // Отладочный вывод перед парсингом
     let [date, time] = dateStr.split(', ');
+    if (!time) {
+        console.error('Invalid date format:', dateStr);
+        return new Date(); // Возвращаем текущее время или другую логическую базовую дату
+    }
     let [day, month, year] = date.split('.');
     let [hours, minutes, seconds] = time.split(':');
 
-    // Создаём новый объект Date
     return new Date(year, month - 1, day, hours, minutes, seconds);
 }
+
 
 
 function updateCurrentPage() {
