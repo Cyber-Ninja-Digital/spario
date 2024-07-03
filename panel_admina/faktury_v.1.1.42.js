@@ -123,9 +123,11 @@ function loadAndDisplayData(dateFrom, dateTo) {
                 if (driverData.invoices) {
                     for (let invoiceId in driverData.invoices) {
                         const invoice = driverData.invoices[invoiceId];
-                        const invoiceDateObj = new Date(invoice.purchaseDate);
+                        // Предполагаем, что timestamp хранится в формате Unix Timestamp (миллисекунды)
+                        const invoiceTimestamp = new Date(invoice.timestamp);
 
-                        if (invoiceDateObj >= dateFromObj && invoiceDateObj <= dateToObj) {
+                        // Фильтруем по timestamp вместо purchaseDate
+                        if (invoiceTimestamp >= dateFromObj && invoiceTimestamp <= dateToObj) {
                             if (!filteredInvoices[driverId]) {
                                 filteredInvoices[driverId] = {};
                             }
@@ -142,6 +144,7 @@ function loadAndDisplayData(dateFrom, dateTo) {
             console.error('Error fetching invoices data: ', error);
         });
 }
+
 
 function updateStatusOptions(statuses) {
     const statusSelect = document.getElementById('status-select');
@@ -181,6 +184,7 @@ function displayInvoicesInTable(data) {
                     const invoice = invoices[invoiceId];
                     invoice.driverName = driverName;
                     invoice.invoiceId = invoiceId;
+                    invoice.addedDate = new Date(invoice.timestamp).toISOString().split('T')[0];
                     invoicesArray.push(invoice);
                     if (invoice.status) uniqueStatuses.add(invoice.status);
                     if (invoice.type) uniqueTypes.add(invoice.type);
@@ -211,6 +215,9 @@ function paginateData(data) {
 
     for (const invoice of paginatedData) {
         const row = tableBody.insertRow();
+        
+                const cellAddedDate = row.insertCell();
+
         const cellDriverId = row.insertCell();
         const cellInvoiceNumber = row.insertCell();
         const cellPurchaseDate = row.insertCell();
@@ -229,6 +236,8 @@ function paginateData(data) {
         const cellFilePreview = row.insertCell();
         const cellRejectionComment = row.insertCell();
         const cellStatusSprawdzenia = row.insertCell();
+        
+                cellAddedDate.textContent = invoice.addedDate;
 
         cellDriverId.textContent = invoice.driverName;
         cellInvoiceNumber.textContent = invoice.numerfaktury;
