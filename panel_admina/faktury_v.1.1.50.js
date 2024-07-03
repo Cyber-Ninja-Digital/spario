@@ -123,10 +123,7 @@ function loadAndDisplayData(dateFrom, dateTo) {
                 if (driverData.invoices) {
                     for (let invoiceId in driverData.invoices) {
                         const invoice = driverData.invoices[invoiceId];
-                        // Предполагаем, что timestamp хранится в формате Unix Timestamp (миллисекунды)
                         const invoiceTimestamp = new Date(invoice.timestamp);
-
-                        // Фильтруем по timestamp, используя объекты Date
                         if (invoiceTimestamp >= dateFromObj && invoiceTimestamp <= dateToObj) {
                             if (!filteredInvoices[driverId]) {
                                 filteredInvoices[driverId] = {};
@@ -139,11 +136,13 @@ function loadAndDisplayData(dateFrom, dateTo) {
 
             invoicesData = filteredInvoices;
             displayInvoicesInTable(invoicesData);
+            sortTable(0); // Автоматическая сортировка данных по первой колонке после их загрузки
         })
         .catch((error) => {
             console.error('Error fetching invoices data: ', error);
         });
 }
+
 
 
 
@@ -304,21 +303,19 @@ function showSkeletonLoader() {
 function sortTable(columnIndex) {
     const tableBody = document.getElementById('data-table').getElementsByTagName('tbody')[0];
     const rows = Array.from(tableBody.rows);
-    const direction = sortDirections[columnIndex] ? 1 : -1;
+    const direction = sortDirections[columnIndex] ? -1 : 1; // Начальное направление для сортировки от новых к старым
 
     rows.sort((a, b) => {
         const dateA = parseDate(a.cells[columnIndex].textContent.trim());
         const dateB = parseDate(b.cells[columnIndex].textContent.trim());
-
-        console.log(`dateA: ${dateA}, dateB: ${dateB}`); // Отладочный вывод
-
-        return direction * (dateB - dateA); // Сортировка от новых к старым
+        return direction * (dateB - dateA);
     });
 
-    sortDirections[columnIndex] = !sortDirections[columnIndex];
+    sortDirections[columnIndex] = !sortDirections[columnIndex]; // Переключаем направление для последующих вызовов
     tableBody.innerHTML = "";
     rows.forEach(row => tableBody.appendChild(row));
 }
+
 
 
 function parseDate(dateStr) {
