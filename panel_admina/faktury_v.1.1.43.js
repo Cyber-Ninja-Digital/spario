@@ -124,7 +124,7 @@ function loadAndDisplayData(dateFrom, dateTo) {
                     for (let invoiceId in driverData.invoices) {
                         const invoice = driverData.invoices[invoiceId];
                         // Предполагаем, что timestamp хранится в формате Unix Timestamp (миллисекунды)
-                        const invoiceTimestamp = new Date(invoice.timestamp);
+                        const invoiceTimestamp = new Date(invoice.timestamp).toLocaleString();
 
                         // Фильтруем по timestamp вместо purchaseDate
                         if (invoiceTimestamp >= dateFromObj && invoiceTimestamp <= dateToObj) {
@@ -184,7 +184,7 @@ function displayInvoicesInTable(data) {
                     const invoice = invoices[invoiceId];
                     invoice.driverName = driverName;
                     invoice.invoiceId = invoiceId;
-                    invoice.addedDate = new Date(invoice.timestamp).toISOString().split('T')[0];
+                    invoice.addedDate = new Date(invoice.timestamp).toLocaleString(); // Используем toLocaleString для полного представления даты и времени
                     invoicesArray.push(invoice);
                     if (invoice.status) uniqueStatuses.add(invoice.status);
                     if (invoice.type) uniqueTypes.add(invoice.type);
@@ -308,7 +308,11 @@ function sortTable(columnIndex) {
     rows.sort((a, b) => {
         const cellA = a.cells[columnIndex].textContent.trim();
         const cellB = b.cells[columnIndex].textContent.trim();
-        if (!isNaN(cellA) && !isNaN(cellB)) {
+
+        // Добавим условие для сортировки даты
+        if (columnIndex === 0) { // Измените 0 на индекс колонки "Дата добавления", если это не первая колонка
+            return direction * (new Date(cellA) - new Date(cellB));
+        } else if (!isNaN(cellA) && !isNaN(cellB)) {
             return direction * (parseFloat(cellA) - parseFloat(cellB));
         } else {
             return direction * cellA.localeCompare(cellB);
@@ -316,10 +320,10 @@ function sortTable(columnIndex) {
     });
 
     sortDirections[columnIndex] = !sortDirections[columnIndex];
-
     tableBody.innerHTML = "";
     rows.forEach(row => tableBody.appendChild(row));
 }
+
 
 function updateCurrentPage() {
     const tableBody = document.getElementById('data-table').getElementsByTagName('tbody')[0];
