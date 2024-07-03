@@ -306,23 +306,28 @@ function sortTable(columnIndex) {
     const rows = Array.from(tableBody.rows);
     const direction = sortDirections[columnIndex] ? 1 : -1;
 
-rows.sort((a, b) => {
-    const cellA = a.cells[columnIndex].textContent.trim();
-    const cellB = b.cells[columnIndex].textContent.trim();
+    // Сортировка в зависимости от содержимого ячейки
+    rows.sort((a, b) => {
+        let valA = a.cells[columnIndex].textContent.trim();
+        let valB = b.cells[columnIndex].textContent.trim();
 
-    if (columnIndex === 0) { // Индекс колонки даты и времени
-        return direction * (new Date(cellA) - new Date(cellB));
-    } else if (!isNaN(cellA) && !isNaN(cellB)) {
-        return direction * (parseFloat(cellA) - parseFloat(cellB));
-    } else {
-        return direction * cellA.localeCompare(cellB);
-    }
-});
+        // Если колонка с датами, преобразуем строки в объекты Date
+        if (columnIndex === 0) { // Предполагаем что дата находится в первой колонке
+            valA = new Date(valA);
+            valB = new Date(valB);
+            return direction * (valA - valB);
+        } else if (!isNaN(parseFloat(valA)) && !isNaN(parseFloat(valB))) {
+            return direction * (parseFloat(valA) - parseFloat(valB));
+        } else {
+            return direction * valA.localeCompare(valB);
+        }
+    });
 
     sortDirections[columnIndex] = !sortDirections[columnIndex];
     tableBody.innerHTML = "";
     rows.forEach(row => tableBody.appendChild(row));
 }
+
 
 
 function updateCurrentPage() {
