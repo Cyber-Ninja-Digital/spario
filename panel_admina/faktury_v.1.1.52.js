@@ -264,7 +264,7 @@ function paginateData(data) {
         // Change status button with dropdown
         const changeStatusSelect = document.createElement('select');
         changeStatusSelect.innerHTML = `
-        <option value="w trakcie sprawdzenia">w trakcie sprawdzenia</option>
+        <option value="W trakcie sprawdzenia">W trakcie sprawdzenia</option>
             <option value="zaakceptowany">zaakceptowany</option>
             <option value="odrzucony">odrzucony</option>
         `;
