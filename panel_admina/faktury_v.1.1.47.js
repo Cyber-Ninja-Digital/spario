@@ -306,19 +306,27 @@ function sortTable(columnIndex) {
     const rows = Array.from(tableBody.rows);
     const direction = sortDirections[columnIndex] ? 1 : -1;
 
-    // Предположим, что колонка с датами добавления имеет индекс 0
     rows.sort((a, b) => {
-        const dateA = new Date(a.cells[columnIndex].textContent.trim());
-        const dateB = new Date(b.cells[columnIndex].textContent.trim());
-        return direction * (dateB - dateA); // Обратная сортировка: от новых к старым
+        const dateA = parseDate(a.cells[columnIndex].textContent.trim());
+        const dateB = parseDate(b.cells[columnIndex].textContent.trim());
+        return direction * (dateB - dateA); // Сортировка от новых к старым
     });
 
-    sortDirections[columnIndex] = !sortDirections[columnIndex]; // Переключаем направление сортировки
+    sortDirections[columnIndex] = !sortDirections[columnIndex]; // Переключение направления сортировки
     tableBody.innerHTML = "";
     rows.forEach(row => tableBody.appendChild(row));
 }
 
 
+function parseDate(dateStr) {
+    // Разделяем дату и время
+    let [date, time] = dateStr.split(', ');
+    let [day, month, year] = date.split('.');
+    let [hours, minutes, seconds] = time.split(':');
+
+    // Создаём новый объект Date в правильном порядке: год, месяц (от 0), день, часы, минуты, секунды
+    return new Date(year, month - 1, day, hours, minutes, seconds);
+}
 
 function updateCurrentPage() {
     const tableBody = document.getElementById('data-table').getElementsByTagName('tbody')[0];
