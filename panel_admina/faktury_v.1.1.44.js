@@ -124,9 +124,9 @@ function loadAndDisplayData(dateFrom, dateTo) {
                     for (let invoiceId in driverData.invoices) {
                         const invoice = driverData.invoices[invoiceId];
                         // Предполагаем, что timestamp хранится в формате Unix Timestamp (миллисекунды)
-                        const invoiceTimestamp = new Date(invoice.timestamp).toLocaleString();
+                        const invoiceTimestamp = new Date(invoice.timestamp);
 
-                        // Фильтруем по timestamp вместо purchaseDate
+                        // Фильтруем по timestamp, используя объекты Date
                         if (invoiceTimestamp >= dateFromObj && invoiceTimestamp <= dateToObj) {
                             if (!filteredInvoices[driverId]) {
                                 filteredInvoices[driverId] = {};
@@ -144,6 +144,7 @@ function loadAndDisplayData(dateFrom, dateTo) {
             console.error('Error fetching invoices data: ', error);
         });
 }
+
 
 
 function updateStatusOptions(statuses) {
