@@ -305,19 +305,18 @@ function sortTable(columnIndex) {
     const rows = Array.from(tableBody.rows);
     const direction = sortDirections[columnIndex] ? 1 : -1;
 
-    rows.sort((a, b) => {
-        const cellA = a.cells[columnIndex].textContent.trim();
-        const cellB = b.cells[columnIndex].textContent.trim();
+rows.sort((a, b) => {
+    const cellA = a.cells[columnIndex].textContent.trim();
+    const cellB = b.cells[columnIndex].textContent.trim();
 
-        // Добавим условие для сортировки даты
-        if (columnIndex === 0) { // Измените 0 на индекс колонки "Дата добавления", если это не первая колонка
-            return direction * (new Date(cellA) - new Date(cellB));
-        } else if (!isNaN(cellA) && !isNaN(cellB)) {
-            return direction * (parseFloat(cellA) - parseFloat(cellB));
-        } else {
-            return direction * cellA.localeCompare(cellB);
-        }
-    });
+    if (columnIndex === 0) { // Индекс колонки даты и времени
+        return direction * (new Date(cellA) - new Date(cellB));
+    } else if (!isNaN(cellA) && !isNaN(cellB)) {
+        return direction * (parseFloat(cellA) - parseFloat(cellB));
+    } else {
+        return direction * cellA.localeCompare(cellB);
+    }
+});
 
     sortDirections[columnIndex] = !sortDirections[columnIndex];
     tableBody.innerHTML = "";
