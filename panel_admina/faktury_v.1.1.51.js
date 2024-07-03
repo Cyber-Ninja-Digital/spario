@@ -111,6 +111,9 @@ function loadAndDisplayData(dateFrom, dateTo) {
     const dateFromObj = new Date(dateFrom);
     const dateToObj = new Date(dateTo);
 
+    // Установка времени конца дня для dateToObj
+    dateToObj.setHours(23, 59, 59, 999);
+
     const realtimeDb = firebase.database().ref('/drivers');
     
     realtimeDb.once('value')
@@ -142,6 +145,7 @@ function loadAndDisplayData(dateFrom, dateTo) {
             console.error('Error fetching invoices data: ', error);
         });
 }
+
 
 
 
@@ -260,6 +264,7 @@ function paginateData(data) {
         // Change status button with dropdown
         const changeStatusSelect = document.createElement('select');
         changeStatusSelect.innerHTML = `
+        <option value="w trakcie sprawdzenia">w trakcie sprawdzenia</option>
             <option value="zaakceptowany">zaakceptowany</option>
             <option value="odrzucony">odrzucony</option>
         `;
