@@ -306,24 +306,14 @@ function sortTable(columnIndex) {
     const rows = Array.from(tableBody.rows);
     const direction = sortDirections[columnIndex] ? 1 : -1;
 
-    // Сортировка в зависимости от содержимого ячейки
+    // Предположим, что колонка с датами добавления имеет индекс 0
     rows.sort((a, b) => {
-        let valA = a.cells[columnIndex].textContent.trim();
-        let valB = b.cells[columnIndex].textContent.trim();
-
-        // Если колонка с датами, преобразуем строки в объекты Date
-        if (columnIndex === 0) { // Предполагаем что дата находится в первой колонке
-            valA = new Date(valA);
-            valB = new Date(valB);
-            return direction * (valA - valB);
-        } else if (!isNaN(parseFloat(valA)) && !isNaN(parseFloat(valB))) {
-            return direction * (parseFloat(valA) - parseFloat(valB));
-        } else {
-            return direction * valA.localeCompare(valB);
-        }
+        const dateA = new Date(a.cells[columnIndex].textContent.trim());
+        const dateB = new Date(b.cells[columnIndex].textContent.trim());
+        return direction * (dateB - dateA); // Обратная сортировка: от новых к старым
     });
 
-    sortDirections[columnIndex] = !sortDirections[columnIndex];
+    sortDirections[columnIndex] = !sortDirections[columnIndex]; // Переключаем направление сортировки
     tableBody.innerHTML = "";
     rows.forEach(row => tableBody.appendChild(row));
 }
